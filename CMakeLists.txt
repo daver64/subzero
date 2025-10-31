@@ -42,17 +42,31 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "MiNT")
     find_library(NCURSES_LIB ncurses)
     find_library(TINFO_LIB tinfo)
     
+    message(STATUS "MiNTOS build configuration:")
+    message(STATUS "  NCURSES_LIB: ${NCURSES_LIB}")
+    message(STATUS "  TINFO_LIB: ${TINFO_LIB}")
+    
     if(NCURSES_LIB)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${NCURSES_LIB})
+        message(STATUS "  Linking: ${NCURSES_LIB}")
         # Add tinfo if it exists separately
         if(TINFO_LIB)
             target_link_libraries(${PROJECT_NAME} PRIVATE ${TINFO_LIB})
+            message(STATUS "  Linking: ${TINFO_LIB}")
+        else()
+            message(STATUS "  tinfo library not found - skipping")
         endif()
     else()
         # Fallback: try linking directly by name
         target_link_libraries(${PROJECT_NAME} PRIVATE ncurses)
-        # Some systems need tinfo separately
-        target_link_libraries(${PROJECT_NAME} PRIVATE tinfo)
+        message(STATUS "  Fallback linking: ncurses")
+        # Only try tinfo if the library was found during search
+        if(TINFO_LIB)
+            target_link_libraries(${PROJECT_NAME} PRIVATE tinfo)
+            message(STATUS "  Fallback linking: tinfo")
+        else()
+            message(STATUS "  tinfo library not found - skipping fallback")
+        endif()
     endif()
 elseif(UNIX AND NOT APPLE)
     # Linux - use ncurses with pkg-config if available, fallback to direct linking

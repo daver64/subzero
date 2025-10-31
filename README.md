@@ -135,28 +135,29 @@ cmake -DCMAKE_SYSTEM_NAME=MiNT \
 make
 ```
 
-**Note**: If you get linking errors about missing `-ltinfo`, the CMake build now automatically handles this by:
+**Note**: The CMake build now automatically handles `-ltinfo` linking by:
 1. First trying to find both `ncurses` and `tinfo` libraries separately
-2. If found, links both libraries properly
-3. If not found, falls back to linking both `-lncurses -ltinfo` by name
+2. Only links `tinfo` if the library actually exists on the system
+3. Skips `tinfo` completely if not found (common on Atari MiNTOS)
+4. Shows detailed linking information during CMake configuration
 
-If you still have issues, you can manually specify library paths:
+If you still get `-ltinfo` errors, try forcing ncurses-only linking:
 ```bash
-# Manual library specification if auto-detection fails
-cmake -DCMAKE_SYSTEM_NAME=MiNT \
-      -DCMAKE_C_COMPILER=m68k-atari-mint-gcc \
-      -DCMAKE_CXX_COMPILER=m68k-atari-mint-g++ \
-      -DCMAKE_EXE_LINKER_FLAGS="-lncurses -ltinfo" \
-      ..
-```
-
-Or if your MiNTOS toolchain has ncurses built without separate tinfo:
-```bash
-# For ncurses built with integrated terminfo
+# Force ncurses-only linking (no tinfo)
 cmake -DCMAKE_SYSTEM_NAME=MiNT \
       -DCMAKE_C_COMPILER=m68k-atari-mint-gcc \
       -DCMAKE_CXX_COMPILER=m68k-atari-mint-g++ \
       -DCMAKE_EXE_LINKER_FLAGS="-lncurses" \
+      ..
+```
+
+Or specify exact library paths if auto-detection fails:
+```bash
+# Manual library paths
+cmake -DCMAKE_SYSTEM_NAME=MiNT \
+      -DCMAKE_C_COMPILER=m68k-atari-mint-gcc \
+      -DCMAKE_CXX_COMPILER=m68k-atari-mint-g++ \
+      -DCMAKE_PREFIX_PATH="/path/to/mint/lib" \
       ..
 ```
 
