@@ -42,8 +42,13 @@ void Editor::run() {
     
     // Setup window to use full terminal except status bar
     TerminalSize terminal_size = m_terminal->getSize();
+    
+    // Ensure minimum terminal size and leave space for status bar
+    int window_rows = (terminal_size.rows > 1) ? terminal_size.rows - 1 : 24;
+    int window_cols = (terminal_size.cols > 0) ? terminal_size.cols : 80;
+    
     m_window->setPosition(Position(0, 0));
-    m_window->setSize(TerminalSize(terminal_size.rows - 1, terminal_size.cols));
+    m_window->setSize(TerminalSize(window_rows, window_cols));
     
     while (m_running) {
         if (m_dirty_display) {
@@ -175,9 +180,16 @@ void Editor::renderStatusBar() {
     if (!m_terminal) return;
     
     TerminalSize terminal_size = m_terminal->getSize();
+    
+    // Ensure valid terminal size
+    if (terminal_size.rows <= 0 || terminal_size.cols <= 0) {
+        return;  // Can't render if size is invalid
+    }
+    
+    // Status line position (bottom row)
     Position status_pos(terminal_size.rows - 1, 0);
     
-    // Clear status line
+    // Clear status line with high-contrast colors for visibility
     std::string status_line(terminal_size.cols, ' ');
     m_terminal->putStringWithColor(status_line, status_pos, Color::WHITE, Color::BLUE);
     
