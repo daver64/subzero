@@ -211,7 +211,15 @@ If you get "error opening terminal" on Atari Falcon, try these solutions:
    - Or set `TERMINFO` to point to terminfo directory
    - Some MiNTOS installations may need terminfo files copied
 
-4. **Console preparation:**
+5. **No terminfo database available:**
+   If you see "All terminal types failed", your system may not have a terminfo database.
+   The program will automatically fall back to basic `initscr()` mode which works without terminfo.
+   ```bash
+   # This should work even without terminfo database
+   ./subzero
+   ```
+
+6. **Console preparation:**
    - Make sure you're running from a proper console/terminal
    - Some Atari systems may need specific terminal setup
 

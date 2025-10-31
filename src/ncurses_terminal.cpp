@@ -57,8 +57,11 @@ bool NcursesTerminal::initialize() {
     
     printf("Attempting newterm()...\n");
     fflush(stdout);
+    
     // Try to initialize ncurses with error checking
     SCREEN* screen = newterm(NULL, stdout, stdin);
+    bool using_initscr = false;
+    
     if (!screen) {
         printf("newterm() failed, trying fallbacks...\n");
         fflush(stdout);
@@ -76,15 +79,31 @@ bool NcursesTerminal::initialize() {
         }
         
         if (!screen) {
-            printf("All terminal types failed\n");
+            printf("All newterm() attempts failed, trying initscr() fallback...\n");
             fflush(stdout);
-            m_last_error = "Failed to initialize terminal - no compatible terminal type found";
-            return false;
+            
+            // Last resort: try initscr() which doesn't require specific terminfo
+            WINDOW* win = initscr();
+            if (win) {
+                printf("Success with initscr() fallback - using basic terminal support\n");
+                fflush(stdout);
+                using_initscr = true;
+            } else {
+                printf("initscr() also failed - no terminfo database available\n");
+                fflush(stdout);
+                m_last_error = "Failed to initialize terminal - no compatible terminal type found";
+                return false;
+            }
         }
+    } else {
+        printf("newterm() succeeded with default terminal\n");
+        fflush(stdout);
     }
     
-    // Set the screen as current
-    set_term(screen);
+    // Set the screen as current (only if we're not using initscr)
+    if (!using_initscr && screen) {
+        set_term(screen);
+    }
     
     // Check if colors are supported before requiring them
     bool color_support = has_colors();
