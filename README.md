@@ -178,6 +178,33 @@ cmake -DCMAKE_SYSTEM_NAME=MiNT \
 - No dynamic library dependencies
 - Built-in syntax highlighting (no plugin system)
 
+**Troubleshooting "error opening terminal":**
+
+If you get "error opening terminal" on Atari Falcon, try these solutions:
+
+1. **Set TERM environment variable:**
+   ```bash
+   export TERM=ansi
+   ./subzero
+   ```
+
+2. **Alternative terminal types:**
+   ```bash
+   export TERM=vt100     # For VT100 compatibility
+   export TERM=dumb      # For basic terminal support
+   ```
+
+3. **Check terminal info database:**
+   - Ensure terminfo database is available in `/usr/share/terminfo/`
+   - Or set `TERMINFO` to point to terminfo directory
+   - Some MiNTOS installations may need terminfo files copied
+
+4. **Console preparation:**
+   - Make sure you're running from a proper console/terminal
+   - Some Atari systems may need specific terminal setup
+
+The program now includes automatic fallbacks for common terminal types (ansi, vt100, dumb) if the default fails.
+
 ## Usage
 
 ```bash

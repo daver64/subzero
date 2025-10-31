@@ -3,6 +3,7 @@
 #if defined(LINUX_PLATFORM) || defined(MINTOS_PLATFORM)
 #include "utf8_utils.h"
 #include <cstring>
+#include <cstdlib>  // For setenv
 
 namespace subzero {
 
@@ -25,17 +26,45 @@ bool NcursesTerminal::initialize() {
     // Set locale for UTF-8 support
     setlocale(LC_ALL, "");
     
-    // Initialize ncurses
-    if (!initscr()) {
-        m_last_error = "Failed to initialize ncurses";
-        return false;
+    // Check and set terminal environment for embedded systems
+    const char* term_env = getenv("TERM");
+    if (!term_env || strlen(term_env) == 0) {
+        // Set a basic terminal type for systems without TERM set
+        #ifdef MINTOS_PLATFORM
+        setenv("TERM", "ansi", 1);  // Basic ANSI terminal
+        #else
+        setenv("TERM", "xterm", 1); // Default to xterm
+        #endif
     }
     
-    // Enable UTF-8 input/output
-    if (start_color() == ERR) {
-        m_last_error = "Terminal does not support colors";
-        endwin();
-        return false;
+    // Try to initialize ncurses with error checking
+    SCREEN* screen = newterm(NULL, stdout, stdin);
+    if (!screen) {
+        // Fallback: try with basic terminal types
+        const char* fallback_terms[] = {"ansi", "vt100", "dumb", NULL};
+        for (int i = 0; fallback_terms[i] != NULL; i++) {
+            screen = newterm(fallback_terms[i], stdout, stdin);
+            if (screen) {
+                break;
+            }
+        }
+        
+        if (!screen) {
+            m_last_error = "Failed to initialize terminal - no compatible terminal type found";
+            return false;
+        }
+    }
+    
+    // Set the screen as current
+    set_term(screen);
+    
+    // Check if colors are supported before requiring them
+    bool color_support = has_colors();
+    if (color_support) {
+        if (start_color() == ERR) {
+            // Colors failed but terminal works - continue without colors
+            color_support = false;
+        }
     }
     
     // Configure ncurses
@@ -43,8 +72,10 @@ bool NcursesTerminal::initialize() {
     keypad(stdscr, TRUE); // Enable function keys
     nodelay(stdscr, FALSE); // Blocking input by default
     
-    // Initialize basic colors
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    // Initialize basic colors only if supported
+    if (color_support) {
+        init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    }
     
     m_initialized = true;
     return true;
@@ -229,6 +260,11 @@ std::string NcursesTerminal::getLastError() const {
 }
 
 int NcursesTerminal::getColorPair(Color::Value fg, Color::Value bg) {
+    // If terminal doesn't support colors, return default
+    if (!has_colors()) {
+        return 0; // Default color pair
+    }
+    
     // Create a unique key for this color combination
     int key = (static_cast<int>(fg) << 8) | static_cast<int>(bg);
     
