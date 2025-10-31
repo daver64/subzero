@@ -6,6 +6,15 @@
 #include <cstdlib>  // For setenv
 #include <cstdio>   // For printf
 
+// Debug output control - disable debug output on MiNTOS by default
+#ifdef MINTOS_PLATFORM
+    // On Atari, minimize debug output to avoid screen clutter
+    #define DEBUG_PRINT(fmt, ...) do {} while(0)
+#else
+    // On other platforms, allow debug output
+    #define DEBUG_PRINT(fmt, ...) do { printf(fmt, ##__VA_ARGS__); fflush(stdout); } while(0)
+#endif
+
 namespace subzero {
 
 NcursesTerminal::NcursesTerminal() 
@@ -13,8 +22,7 @@ NcursesTerminal::NcursesTerminal()
     , m_raw_mode(false)
     , m_next_color_pair(1)
 {
-    printf("NcursesTerminal constructor called\n");
-    fflush(stdout);
+    DEBUG_PRINT("NcursesTerminal constructor called\n");
 }
 
 NcursesTerminal::~NcursesTerminal() {
@@ -22,71 +30,59 @@ NcursesTerminal::~NcursesTerminal() {
 }
 
 bool NcursesTerminal::initialize() {
-    printf("NcursesTerminal::initialize() called\n");
-    fflush(stdout);
+    DEBUG_PRINT("NcursesTerminal::initialize() called\n");
     
     if (m_initialized) {
-        printf("Already initialized, returning true\n");
-        fflush(stdout);
+        DEBUG_PRINT("Already initialized, returning true\n");
         return true;
     }
     
-    printf("Setting locale...\n");
-    fflush(stdout);
+    DEBUG_PRINT("Setting locale...\n");
     // Set locale for UTF-8 support
     setlocale(LC_ALL, "");
     
     // Check and set terminal environment for embedded systems
     const char* term_env = getenv("TERM");
-    printf("Current TERM=%s\n", term_env ? term_env : "NULL");
-    fflush(stdout);
+    DEBUG_PRINT("Current TERM=%s\n", term_env ? term_env : "NULL");
     
     if (!term_env || strlen(term_env) == 0) {
-        printf("TERM not set, setting default...\n");
-        fflush(stdout);
+        DEBUG_PRINT("TERM not set, setting default...\n");
         // Set a basic terminal type for systems without TERM set
         #ifdef MINTOS_PLATFORM
         setenv("TERM", "tw100-m", 1);  // Atari TW100 terminal
-        printf("Set TERM=tw100-m for MiNTOS\n");
+        DEBUG_PRINT("Set TERM=tw100-m for MiNTOS\n");
         #else
         setenv("TERM", "xterm", 1); // Default to xterm
-        printf("Set TERM=xterm for other platforms\n");
+        DEBUG_PRINT("Set TERM=xterm for other platforms\n");
         #endif
-        fflush(stdout);
     }
     
-    printf("Attempting newterm()...\n");
-    fflush(stdout);
+    DEBUG_PRINT("Attempting newterm()...\n");
     
     // Try to initialize ncurses with error checking
     SCREEN* screen = newterm(NULL, stdout, stdin);
     bool using_initscr = false;
     
     if (!screen) {
-        printf("newterm() failed, trying fallbacks...\n");
-        fflush(stdout);
+        DEBUG_PRINT("newterm() failed, trying fallbacks...\n");
         // Fallback: try with basic terminal types, including Atari-specific ones
         const char* fallback_terms[] = {"tw100-m", "tw100", "tw52", "ansi", "vt100", "vt52", "dumb", NULL};
         for (int i = 0; fallback_terms[i] != NULL; i++) {
-            printf("Trying terminal type: %s\n", fallback_terms[i]);
-            fflush(stdout);
+            DEBUG_PRINT("Trying terminal type: %s\n", fallback_terms[i]);
             screen = newterm(fallback_terms[i], stdout, stdin);
             if (screen) {
-                printf("Success with terminal type: %s\n", fallback_terms[i]);
-                fflush(stdout);
+                DEBUG_PRINT("Success with terminal type: %s\n", fallback_terms[i]);
                 break;
             }
         }
         
         if (!screen) {
-            printf("All newterm() attempts failed, trying initscr() fallback...\n");
-            fflush(stdout);
+            DEBUG_PRINT("All newterm() attempts failed, trying initscr() fallback...\n");
             
             // Last resort: try initscr() which doesn't require specific terminfo
             WINDOW* win = initscr();
             if (win) {
-                printf("Success with initscr() fallback - using basic terminal support\n");
-                fflush(stdout);
+                DEBUG_PRINT("Success with initscr() fallback - using basic terminal support\n");
                 using_initscr = true;
             } else {
                 printf("initscr() also failed - no terminfo database available\n");
@@ -96,8 +92,7 @@ bool NcursesTerminal::initialize() {
             }
         }
     } else {
-        printf("newterm() succeeded with default terminal\n");
-        fflush(stdout);
+        DEBUG_PRINT("newterm() succeeded with default terminal\n");
     }
     
     // Set the screen as current (only if we're not using initscr)
@@ -118,6 +113,10 @@ bool NcursesTerminal::initialize() {
     noecho();           // Don't echo keys
     keypad(stdscr, TRUE); // Enable function keys
     nodelay(stdscr, FALSE); // Blocking input by default
+    
+    // Clear screen to remove any debug output from startup
+    clear();
+    refresh();
     
     // Initialize basic colors only if supported
     if (color_support) {

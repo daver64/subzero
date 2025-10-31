@@ -378,10 +378,12 @@ void Editor::handleInsertMode(const KeyPress& key) {
             case BACKSPACE:
                 m_buffer->deleteCharBefore();
                 m_dirty_display = true;  // Full redraw for backspace (line may change)
+                m_window->forceFullRefresh();  // Force complete screen refresh for Atari compatibility
                 break;
             case DELETE:
                 m_buffer->deleteChar();
                 m_dirty_display = true;  // Full redraw for delete
+                m_window->forceFullRefresh();  // Force complete screen refresh for Atari compatibility
                 break;
             case ENTER:
                 m_buffer->splitLine();
@@ -530,10 +532,12 @@ void Editor::enterInsertModeNewLineAbove() {
 void Editor::deleteCharacter() { 
     m_buffer->deleteChar(); 
     m_dirty_display = true;  // Fix: Update screen after character deletion
+    m_window->forceFullRefresh();  // Force complete screen refresh for Atari compatibility
 }
 void Editor::deleteLine() { 
     m_buffer->deleteLine(); 
     m_dirty_display = true;  // Fix: Update screen after line deletion
+    m_window->forceFullRefresh();  // Force complete screen refresh for Atari compatibility
 }
 
 void Editor::yankLine() {
@@ -813,13 +817,28 @@ void Editor::executeCommand(const std::string& command) {
     if (command.empty()) return;
     
     if (command == "q" || command == "quit") {
-        if (m_buffer->isModified()) {
-            setErrorMessage("No write since last change (use :q! to override)");
+        // If we have multiple buffers, close the current buffer
+        if (m_buffers.size() > 1) {
+            if (m_buffer->isModified()) {
+                setErrorMessage("No write since last change (use :q! to override)");
+            } else {
+                closeBuffer();  // Close current buffer
+            }
         } else {
-            quit();
+            // Only one buffer left, quit the editor
+            if (m_buffer->isModified()) {
+                setErrorMessage("No write since last change (use :q! to override)");
+            } else {
+                quit();
+            }
         }
     } else if (command == "q!" || command == "quit!") {
-        quit();
+        // Force quit - if multiple buffers, force close current buffer
+        if (m_buffers.size() > 1) {
+            forceCloseBuffer();  // Close current buffer without checking for changes
+        } else {
+            quit();  // Quit the editor
+        }
     } else if (command == "w" || command == "write") {
         saveFile();
     } else if (command == "wq" || command == "x") {
@@ -885,15 +904,34 @@ void Editor::executeCommand(const std::string& command) {
     } else if (command == "bd" || command == "bdelete") {
         closeBuffer();
     } else if (command == "bd!" || command == "bdelete!") {
-        // Force close buffer - TODO: implement force close
-        closeBuffer();
+        forceCloseBuffer();
     } else if (command.substr(0, 2) == "b ") {
         std::string buffer_num_str = command.substr(2);
-        try {
-            int buffer_num = compat::stoi(buffer_num_str);
-            switchToBuffer(buffer_num - 1);  // Convert to 0-based index
-        } catch (const std::exception&) {
-            setErrorMessage("Invalid buffer number: " + buffer_num_str);
+        // Trim whitespace
+        size_t start = buffer_num_str.find_first_not_of(" \t");
+        if (start != std::string::npos) {
+            buffer_num_str = buffer_num_str.substr(start);
+            size_t end = buffer_num_str.find_last_not_of(" \t");
+            if (end != std::string::npos) {
+                buffer_num_str = buffer_num_str.substr(0, end + 1);
+            }
+        }
+        
+        if (buffer_num_str.empty()) {
+            setErrorMessage("Buffer number required. Use :ls to see all buffers.");
+        } else {
+            try {
+                int buffer_num = compat::stoi(buffer_num_str);
+                if (buffer_num < 1) {
+                    setErrorMessage("Buffer numbers start from 1. Use :ls to see all buffers.");
+                } else if (buffer_num > static_cast<int>(m_buffers.size())) {
+                    setErrorMessage("Buffer " + compat::to_string(buffer_num) + " does not exist. Use :ls to see all buffers.");
+                } else {
+                    switchToBuffer(buffer_num - 1);  // Convert to 0-based index
+                }
+            } catch (const std::exception&) {
+                setErrorMessage("Invalid buffer number: " + buffer_num_str + ". Use :ls to see all buffers.");
+            }
         }
     } else if (command == "help" || command == "h") {
         showHelp();
@@ -1170,8 +1208,50 @@ bool Editor::closeBuffer(int buffer_index) {
     return true;
 }
 
+bool Editor::forceCloseBuffer(int buffer_index) {
+    if (buffer_index == -1) {
+        buffer_index = m_current_buffer_index;
+    }
+    
+    if (buffer_index < 0 || buffer_index >= static_cast<int>(m_buffers.size())) {
+        setErrorMessage("No buffer " + compat::to_string(buffer_index + 1));
+        return false;
+    }
+    
+    // Don't close the last buffer
+    if (m_buffers.size() == 1) {
+        setErrorMessage("Cannot close last buffer");
+        return false;
+    }
+    
+    // Remove the buffer (no modification check)
+    m_buffers.erase(m_buffers.begin() + buffer_index);
+    
+    // Adjust current buffer index
+    if (m_current_buffer_index >= buffer_index && m_current_buffer_index > 0) {
+        m_current_buffer_index--;
+    }
+    if (m_current_buffer_index >= static_cast<int>(m_buffers.size())) {
+        m_current_buffer_index = m_buffers.size() - 1;
+    }
+    
+    // Switch to the new current buffer
+    m_buffer = m_buffers[m_current_buffer_index];
+    m_window->setBuffer(m_buffer);
+    
+    setStatusMessage("Buffer force closed. Now showing buffer " + compat::to_string(m_current_buffer_index + 1));
+    m_dirty_display = true;
+    return true;
+}
+
 void Editor::listBuffers() {
-    std::string buffer_list = "Buffers:\n";
+    // Create buffer list content
+    std::string buffer_list_text = "Buffer List\n";
+    buffer_list_text += "===========\n\n";
+    buffer_list_text += "Usage: :b <number> to switch to buffer\n";
+    buffer_list_text += "       :bd to close current buffer\n";
+    buffer_list_text += "       :bn/:bp for next/previous buffer\n\n";
+    
     for (size_t i = 0; i < m_buffers.size(); ++i) {
         std::string marker = (i == static_cast<size_t>(m_current_buffer_index)) ? "%" : " ";
         std::string modified = m_buffers[i]->isModified() ? "+" : " ";
@@ -1180,10 +1260,30 @@ void Editor::listBuffers() {
             filename = "[No Name]";
         }
         
-        buffer_list += "  " + compat::to_string(i + 1) + marker + modified + " " + filename + "\n";
+        buffer_list_text += "  " + compat::to_string(i + 1) + marker + modified + " " + filename;
+        
+        // Add status indicators explanation on first line
+        if (i == 0) {
+            buffer_list_text += "    (% = current, + = modified)";
+        }
+        buffer_list_text += "\n";
     }
     
-    setStatusMessage(buffer_list);
+    buffer_list_text += "\nPress :q to close this buffer list and return to your work.";
+    
+    // Create a new buffer with buffer list content
+    shared_ptr<Buffer> list_buffer(new Buffer());
+    list_buffer->setFilename("*buffers*");
+    
+    // Load the buffer list text using our stream method
+    std::istringstream list_stream(buffer_list_text);
+    list_buffer->loadFromStream(list_stream);
+    
+    // Add to buffer list and switch to it
+    m_buffers.push_back(list_buffer);
+    switchToBuffer(m_buffers.size() - 1);
+    
+    setStatusMessage("Buffer list opened - :q to close");
 }
 
 } // namespace subzero

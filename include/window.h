@@ -64,6 +64,7 @@ public:
     // Rendering
     void render();
     void renderLine(size_t buffer_line, size_t screen_row);
+    void forceFullRefresh();  // Force complete screen clear and redraw
     void updateCursor();
     
     // Coordinate conversion

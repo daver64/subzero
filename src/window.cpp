@@ -159,6 +159,11 @@ void Window::render() {
     updateCursor();
 }
 
+void Window::forceFullRefresh() {
+    m_force_full_clear = true;
+    render();
+}
+
 void Window::renderLine(size_t buffer_line, size_t screen_row) {
     if (!m_terminal || !m_buffer) return;
     

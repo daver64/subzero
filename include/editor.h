@@ -83,6 +83,7 @@ public:
     void nextBuffer();
     void previousBuffer();
     bool closeBuffer(int buffer_index = -1);  // -1 for current buffer
+    bool forceCloseBuffer(int buffer_index = -1);  // -1 for current buffer, ignore modifications
     void listBuffers();
     int getCurrentBufferIndex() const { return m_current_buffer_index; }
     size_t getBufferCount() const { return m_buffers.size(); }
