@@ -11,13 +11,15 @@ A lightweight, cross-platform vi-like text editor with C++98 compatibility, full
 - **Vi-compatible**: Familiar vi key bindings and modal editing
 - **Built-in syntax highlighting**: C/C++ and Markdown syntax highlighting without external dependencies
 - **Multi-buffer support**: Work with multiple files simultaneously
+- **Comprehensive help system**: Built-in `:help` command with complete documentation
+- **Performance optimized**: Minimal screen redraws and optimized rendering for fast operation
 
 ### Vi Modes Implemented
 - **Normal Mode**: Movement, editing commands, and navigation
 - **Insert Mode**: Text insertion with UTF-8 support
 - **Visual Mode**: Text selection and visual operations
-- **Command Mode**: Ex commands (`:w`, `:q`, `:wq`, `:ls`, `:b`, etc.)
-- **Search Mode**: Forward and backward search
+- **Command Mode**: Ex commands (`:w`, `:q`, `:wq`, `:ls`, `:b`, `:help`, etc.)
+- **Search Mode**: Forward and backward search with pattern entry
 
 ### Multi-Buffer Commands
 | Command | Action |
@@ -28,6 +30,7 @@ A lightweight, cross-platform vi-like text editor with C++98 compatibility, full
 | `:bp` | Switch to previous buffer |
 | `:bd` | Close current buffer |
 | `:bd!` | Force close buffer (discard changes) |
+| `:help`, `:h` | Show comprehensive help in new buffer |
 
 ### Key Bindings
 
@@ -73,18 +76,30 @@ A lightweight, cross-platform vi-like text editor with C++98 compatibility, full
 | `:wq`, `:x` | Save and quit |
 | `:e filename` | Open file for editing |
 | `:e!` | Reload current file (discard changes) |
+| `:help`, `:h` | Show comprehensive help documentation |
+
+### Help System
+- **Built-in documentation**: `:help` or `:h` opens comprehensive help in a new buffer named `*help*`
+- **Complete command reference**: All modes, commands, and features documented
+- **Searchable**: Use normal vi commands to navigate help content
+- **No file overwrite**: Help opens in separate buffer, original files remain untouched
+- **Easy exit**: Use `:q` to close help and return to your work
 
 ### Syntax Highlighting
 - **Built-in C/C++ highlighter**: Keywords, types, strings, comments, and operators
+- **Built-in Markdown highlighter**: Headers, bold, italic, code blocks, links, lists
 - **Color-coded syntax**: Different colors for different language elements
-- **Automatic detection**: Based on file extension (.c, .cpp, .h, .hpp, etc.)
+- **Automatic detection**: Based on file extension (.c, .cpp, .h, .hpp, .md, etc.)
 - **No external dependencies**: All highlighting built into the executable
+- **Performance optimized**: Efficient highlighting suitable for large files
 
 ### Performance Features
 - **Optimized rendering**: Minimal screen redraws for fast typing
 - **Smart terminal I/O**: Reduces character-by-character terminal calls
+- **Proper screen clearing**: Fixed deletion artifacts and improved display consistency
 - **Efficient memory usage**: C++98 compatible memory management
 - **Low CPU overhead**: Suitable for embedded and retro systems
+- **Deferred updates**: Intelligent screen refresh to minimize flickering
 
 ### Display Features
 - **Line numbers**: Always visible line number display
@@ -92,6 +107,14 @@ A lightweight, cross-platform vi-like text editor with C++98 compatibility, full
 - **UTF-8 rendering**: Proper display of international characters
 - **Syntax highlighting**: Color-coded text for supported file types
 - **Viewport management**: Smooth scrolling and cursor tracking
+- **Clean deletions**: Proper clearing of deleted text areas
+
+### Search System
+- **Pattern entry**: Forward (`/`) and backward (`?`) search modes
+- **Search navigation**: `n` and `N` for next/previous results
+- **C++98 compatible**: String-based searching without regex dependencies
+- **UTF-8 aware**: Proper character-based pattern matching
+- **Status feedback**: Clear indication of search progress and results
 
 ## Building
 
@@ -319,23 +342,32 @@ subzero/
 ### Completed ✅
 - [x] Cross-platform terminal abstraction (Linux, Windows, Atari)
 - [x] UTF-8 text handling
-- [x] Complete vi modes (Normal, Insert, Visual, Command)
+- [x] Complete vi modes (Normal, Insert, Visual, Command, Search)
 - [x] File operations (open, save, new, reload)
 - [x] Multi-buffer support with buffer management commands
-- [x] Built-in syntax highlighting for C/C++
+- [x] Built-in syntax highlighting for C/C++ and Markdown
 - [x] Core movement and editing commands with repeat counts
 - [x] Status bar and user interface
-- [x] Window system with scrolling
+- [x] Window system with scrolling and proper screen clearing
 - [x] C++98 compatibility for embedded systems
+- [x] Comprehensive help system with `:help` command
+- [x] Search functionality with pattern entry and navigation
+- [x] Performance optimizations for smooth operation
+- [x] Screen rendering fixes for proper deletion display
 
 ### Planned 🚧
-- [ ] Additional syntax highlighters (Python, JavaScript, etc.)
-- [ ] Advanced search with regex support  
+- [ ] Advanced search with regex support
 - [ ] Enhanced undo/redo system
 - [ ] Configuration file support
 - [ ] Mouse support
 - [ ] Split windows
 - [ ] Macro recording and playback
+- [ ] Additional syntax highlighters (Python, JavaScript, etc.)
+
+### Known Issues 🐛
+- Visual selection operations are basic (mode switching works, selection display limited)
+- Some advanced vi text objects not implemented (`dw`, `cw`, etc.)
+- No regex support in search (string-based only for C++98 compatibility)
 
 ## Contributing
 

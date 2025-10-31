@@ -9,6 +9,9 @@ Subzero is a vi-like modal text editor with UTF-8 support, multi-buffer manageme
 - **Built-in syntax highlighting**: No external dependencies required
 - **Multi-buffer support**: Work with multiple files simultaneously
 - **UTF-8 native**: Full international text support
+- **Comprehensive help system**: Built-in `:help` command with complete documentation
+- **Search functionality**: Pattern-based searching with navigation
+- **Performance optimized**: Fast rendering and minimal screen flicker
 
 ## Modes
 
@@ -126,6 +129,19 @@ Enter Command mode with `:` from Normal mode.
 | `:bd` or `:bdelete` | Close current buffer |
 | `:bd!` or `:bdelete!` | Force close current buffer (discard changes) |
 
+### Help System
+
+| Command | Description |
+|---------|-------------|
+| `:help` or `:h` | Open comprehensive help documentation in new buffer `*help*` |
+
+**Help Features:**
+- **Complete documentation**: All commands, modes, and features covered
+- **Separate buffer**: Opens in `*help*` buffer, doesn't overwrite your files
+- **Searchable content**: Use normal vi navigation to find information
+- **Easy exit**: Use `:q` to close help and return to your work
+- **Always available**: Built-in documentation, no external files needed
+
 **Note**: In Command mode:
 - `Backspace` - Delete last character from command (UTF-8 aware)
 - `Enter` - Execute command
@@ -170,14 +186,33 @@ Buffers:
 
 Enter Search mode with `/` (forward) or `?` (backward) from Normal mode.
 
+### Search Commands
+
 | Command | Description |
 |---------|-------------|
-| `/` | Start forward search |
-| `?` | Start backward search |
+| `/pattern` | Search forward for pattern |
+| `?pattern` | Search backward for pattern |
+| `n` | Go to next search result |
+| `N` | Go to previous search result |
 
-**Note**: Search entry works (you can type patterns) but actual searching is not yet implemented. The following are stubs:
-- `n` - Next search result (shows "not implemented" message)
-- `N` - Previous search result (shows "not implemented" message)
+### Search Features
+- **String-based matching**: Searches for exact text patterns (no regex for C++98 compatibility)
+- **UTF-8 aware**: Properly handles international characters in search patterns
+- **Case-sensitive**: Exact character matching
+- **Wrap-around**: Search continues from beginning/end of file when reaching end/beginning
+- **Status feedback**: Shows search progress and "not found" messages
+- **Pattern display**: Current search pattern shown in status bar
+
+### Search Navigation
+In Search mode:
+- **Type pattern**: Enter your search text
+- **Backspace**: Delete last character from pattern (UTF-8 aware)
+- **Enter**: Execute search and return to Normal mode
+- **ESC**: Cancel search and return to Normal mode
+
+After searching (in Normal mode):
+- **`n`**: Jump to next occurrence of last search pattern
+- **`N`**: Jump to previous occurrence of last search pattern
 
 ---
 
@@ -284,35 +319,51 @@ Many commands support repeat counts (prefix with number):
 ## Known Limitations
 
 ### Not Yet Implemented
-- Search functionality (beyond entering search mode)
-- Redo (only undo works)
-- Range commands in command mode
-- Text objects (e.g., `dw`, `cw`)
-- Proper visual selection operations
+- Advanced search with regex support (uses string matching for C++98 compatibility)
+- Redo functionality (only undo works)
+- Range commands in command mode (e.g., `:1,5d`)
+- Text objects (e.g., `dw`, `cw`, `diw`)
+- Proper visual selection operations beyond mode switching
 - Mouse support
 - Configuration files
-- Additional syntax highlighters
+- Additional syntax highlighters beyond C/C++ and Markdown
+- Macro recording and playback
+- Split windows
 
-### Working As Expected
-- Multi-buffer management ✓
-- Basic syntax highlighting ✓
-- UTF-8 support ✓
-- Proper vi command sequences (`gg`, `dd`, `yy`) ✓
-- Tab indentation ✓
-- File operations ✓
+### Working As Expected ✅
+- **Multi-buffer management**: Complete buffer system with switching, listing, and management
+- **Syntax highlighting**: C/C++ and Markdown with automatic detection
+- **UTF-8 support**: Full international character support throughout
+- **Vi command sequences**: Proper `gg`, `dd`, `yy` implementations
+- **Tab indentation**: 4-space insertion in Insert mode
+- **File operations**: All basic file I/O operations
+- **Help system**: Comprehensive built-in documentation
+- **Search functionality**: Pattern entry, execution, and navigation
+- **Screen rendering**: Proper display updates and deletion handling
+- **Performance**: Optimized for smooth operation on all platforms
+
+### Recently Fixed ✅
+- **Screen clearing**: Deletion artifacts properly removed
+- **Buffer switching**: Clean transitions between files
+- **Help buffer isolation**: Help doesn't overwrite file content
+- **Search pattern handling**: UTF-8 aware pattern entry and matching
 
 ---
 
 ## Tips
 
-1. **Use multiple buffers** - `:e filename` to open additional files
-2. **Check buffer status** - `:ls` shows all open files
-3. **Save frequently** - `:w` to save current buffer
-4. **Use proper vi commands** - `gg`, `dd`, `yy` work as expected
-5. **Tab for indentation** - Inserts 4 spaces in Insert mode
-6. **Syntax highlighting** - Automatic for C/C++ files
-7. **Buffer navigation** - `:bn` and `:bp` for quick switching
-8. **UTF-8 just works** - Type international characters normally
+1. **Use multiple buffers** - `:e filename` to open additional files, `:ls` to see all open files
+2. **Get help anytime** - `:help` opens comprehensive documentation in a separate buffer
+3. **Search efficiently** - Use `/pattern` to find text, then `n` and `N` to navigate results
+4. **Save frequently** - `:w` to save current buffer, `:wq` to save and quit
+5. **Use proper vi commands** - `gg`, `dd`, `yy` work as expected with repeat counts
+6. **Tab for indentation** - Inserts 4 spaces in Insert mode
+7. **Syntax highlighting** - Automatic for C/C++ and Markdown files
+8. **Buffer navigation** - `:bn` and `:bp` for quick switching between files
+9. **UTF-8 just works** - Type international characters normally, everything is character-aware
+10. **Performance optimized** - Fast rendering and minimal screen updates for smooth editing
+11. **Clean deletions** - Text deletion properly clears screen areas (no ghost characters)
+12. **Help is searchable** - Use normal vi navigation in help buffer to find specific topics
 
 ---
 
