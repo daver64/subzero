@@ -15,6 +15,7 @@ Editor::Editor(shared_ptr<ITerminal> terminal)
     , m_running(false)
     , m_dirty_display(true)
     , m_fast_mode(false)
+    , m_render_delay_counter(0)
     , m_yank_line_mode(false)
     , m_repeat_count(0)
     , m_syntax_manager(new SyntaxHighlighterManager())
@@ -52,9 +53,16 @@ void Editor::run() {
     m_window->setSize(TerminalSize(window_rows, window_cols));
     
     while (m_running) {
+        // Check if we should defer rendering during rapid typing
         if (m_dirty_display) {
-            render();
-            m_dirty_display = false;
+            if (m_render_delay_counter > 0) {
+                m_render_delay_counter--;
+                // Skip rendering this frame to improve typing performance
+            } else {
+                render();
+                m_dirty_display = false;
+                m_fast_mode = false;  // Exit fast mode after rendering
+            }
         }
         
         handleInput();
@@ -393,11 +401,15 @@ void Editor::handleInsertMode(const KeyPress& key) {
     } else if (key.isCharacter()) {
         m_buffer->insertString(key.utf8_char);
         
-        // Fast path: only redraw current line for simple character insertion
+        // Enable fast mode and defer rendering for better typing performance
+        m_fast_mode = true;
+        m_render_delay_counter = 2;  // Defer for 2 input cycles
+        m_dirty_display = true;
+        
+        // Immediate cursor update for responsive feel (minimal cost)
         if (m_window) {
-            // TODO: Add a renderCurrentLine() method for performance
-            // For now, use minimal redraw
-            m_dirty_display = true;
+            m_window->updateCursor();
+            // Skip terminal refresh - will be done when rendering resumes
         }
     }
 }
@@ -516,7 +528,10 @@ void Editor::enterInsertModeNewLineAbove() {
 }
 
 void Editor::deleteCharacter() { m_buffer->deleteChar(); }
-void Editor::deleteLine() { m_buffer->deleteLine(); }
+void Editor::deleteLine() { 
+    m_buffer->deleteLine(); 
+    m_dirty_display = true;  // Fix: Update screen after line deletion
+}
 
 void Editor::yankLine() {
     m_yank_buffer = m_buffer->yankLine();

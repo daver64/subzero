@@ -121,10 +121,30 @@ void Window::render() {
         last_window_cols = m_window_size.cols;
     }
     
-    // Render buffer lines
+    // Render buffer lines (skip rendering lines beyond buffer end)
+    size_t buffer_line_count = m_buffer->getLineCount();
     for (size_t screen_row = 0; screen_row < static_cast<size_t>(m_window_size.rows); ++screen_row) {
         size_t buffer_line = m_top_line + screen_row;
-        renderLine(buffer_line, screen_row);
+        
+        // Only render lines that exist in buffer
+        if (buffer_line < buffer_line_count) {
+            renderLine(buffer_line, screen_row);
+        } else {
+            // For empty lines below buffer, just clear the line efficiently
+            Position line_start(m_window_pos.row + screen_row, m_window_pos.col);
+            if (m_show_line_numbers) {
+                // Clear line number area
+                std::string empty_line_num(getLineNumberWidth(), ' ');
+                m_terminal->putString(empty_line_num, line_start);
+                // Clear text area
+                std::string empty_text(getTextAreaWidth(), ' ');
+                Position text_pos(line_start.row, line_start.col + getLineNumberWidth());
+                m_terminal->putString(empty_text, text_pos);
+            } else {
+                std::string empty_line(m_window_size.cols, ' ');
+                m_terminal->putString(empty_line, line_start);
+            }
+        }
     }
     
     updateCursor();
@@ -143,7 +163,11 @@ void Window::renderLine(size_t buffer_line, size_t screen_row) {
     // Render line content
     if (buffer_line < m_buffer->getLineCount()) {
         std::string line = m_buffer->getLine(buffer_line);
-        line = expandTabs(line);
+        
+        // Skip expensive tab expansion in fast mode if no tabs present
+        if (line.find('\t') != std::string::npos) {
+            line = expandTabs(line);
+        }
         
         // Handle horizontal scrolling
         if (!m_wrap_lines && line.length() > m_left_column) {
