@@ -1,21 +1,33 @@
 # Subzero Text Editor
 
-A lightweight, cross-platform vi-like text editor written in modern C++ with full UTF-8 support.
+A lightweight, cross-platform vi-like text editor with C++98 compatibility, full UTF-8 support, and built-in syntax highlighting.
 
 ## Features
 
 ### Core Functionality
-- **Cross-platform**: Runs on Linux (ncurses) and Windows (Console API)
+- **Cross-platform**: Runs on Linux (ncurses), Windows (Console API), and embedded systems like Atari MiNTOS
+- **C++98 Compatible**: Works with older compilers including GCC 4.6 on Atari Falcon
 - **UTF-8 native**: Full international text support with proper character-aware operations
 - **Vi-compatible**: Familiar vi key bindings and modal editing
-- **Modern C++**: Clean architecture using C++17, smart pointers, and RAII
+- **Built-in syntax highlighting**: C/C++ syntax highlighting without external dependencies
+- **Multi-buffer support**: Work with multiple files simultaneously
 
 ### Vi Modes Implemented
 - **Normal Mode**: Movement, editing commands, and navigation
 - **Insert Mode**: Text insertion with UTF-8 support
-- **Visual Mode**: Text selection (basic implementation)
-- **Command Mode**: Ex commands (`:w`, `:q`, `:wq`, etc.)
-- **Search Mode**: Forward and backward search (framework)
+- **Visual Mode**: Text selection and visual operations
+- **Command Mode**: Ex commands (`:w`, `:q`, `:wq`, `:ls`, `:b`, etc.)
+- **Search Mode**: Forward and backward search
+
+### Multi-Buffer Commands
+| Command | Action |
+|---------|--------|
+| `:ls` | List all open buffers |
+| `:b N` | Switch to buffer N |
+| `:bn` | Switch to next buffer |
+| `:bp` | Switch to previous buffer |
+| `:bd` | Close current buffer |
+| `:bd!` | Force close buffer (discard changes) |
 
 ### Key Bindings
 
@@ -31,15 +43,15 @@ A lightweight, cross-platform vi-like text editor written in modern C++ with ful
 | `a` | Enter insert mode after cursor |
 | `o`, `O` | Insert new line after/before |
 | `x` | Delete character |
-| `dd` | Delete line |
-| `yy` | Yank (copy) line |
-| `p`, `P` | Paste after/before cursor |
+| `dd` | Delete line (supports repeat count: `3dd`) |
+| `yy` | Yank (copy) line (supports repeat count: `2yy`) |
+| `p`, `P` | Paste after/before cursor (supports repeat count) |
 | `u` | Undo |
 | `v`, `V` | Enter visual/visual line mode |
 | `:` | Enter command mode |
 | `/`, `?` | Search forward/backward |
 | `n`, `N` | Next/previous search result |
-| `q` | Quit (simplified) |
+| Numbers | Repeat count for commands (e.g., `3dd`, `5j`) |
 
 #### Insert Mode
 | Key | Action |
@@ -59,21 +71,33 @@ A lightweight, cross-platform vi-like text editor written in modern C++ with ful
 | `:w` | Save file |
 | `:w filename` | Save as filename |
 | `:wq`, `:x` | Save and quit |
+| `:e filename` | Open file for editing |
+| `:e!` | Reload current file (discard changes) |
+
+### Syntax Highlighting
+- **Built-in C/C++ highlighter**: Keywords, types, strings, comments, and operators
+- **Color-coded syntax**: Different colors for different language elements
+- **Automatic detection**: Based on file extension (.c, .cpp, .h, .hpp, etc.)
+- **No external dependencies**: All highlighting built into the executable
 
 ### Display Features
-- **Line numbers**: Configurable line number display
-- **Status bar**: Shows current mode, filename, cursor position, and line count
+- **Line numbers**: Always visible line number display
+- **Status bar**: Shows current mode, filename, cursor position, buffer info, and modification status
 - **UTF-8 rendering**: Proper display of international characters
-- **Tab expansion**: Configurable tab width
+- **Syntax highlighting**: Color-coded text for supported file types
 - **Viewport management**: Smooth scrolling and cursor tracking
 
 ## Building
 
 ### Prerequisites
 - CMake 3.10 or higher
-- C++17 compatible compiler (GCC, Clang, MSVC)
+- **C++98 compatible compiler** with optional gnu++0x support
+  - GCC 4.6+ (including Atari cross-compiler)
+  - Clang 3.0+
+  - MSVC 2008+
 - **Linux**: ncurses library (`sudo apt install libncurses5-dev` on Ubuntu)
 - **Windows**: Windows SDK (Console API)
+- **Atari MiNTOS**: m68k-atari-mint cross-compiler
 
 ### Build Instructions
 
@@ -94,6 +118,22 @@ cd ..
 ./subzero [filename]
 ```
 
+### Cross-compilation for Atari
+
+```bash
+# Set up cross-compilation toolchain
+export CC=m68k-atari-mint-gcc
+export CXX=m68k-atari-mint-g++
+
+# Configure for Atari target
+cmake -DCMAKE_SYSTEM_NAME=Generic \
+      -DCMAKE_C_COMPILER=m68k-atari-mint-gcc \
+      -DCMAKE_CXX_COMPILER=m68k-atari-mint-g++ \
+      ..
+
+make
+```
+
 ### Platform-Specific Notes
 
 #### Linux
@@ -106,6 +146,12 @@ cd ..
 - UTF-8 code page automatically enabled
 - Supports Windows 10+ enhanced console features
 
+#### Atari MiNTOS
+- Compiled with m68k-atari-mint-gcc 4.6
+- Uses C++98 standard with gnu++0x extensions when available
+- No dynamic library dependencies
+- Built-in syntax highlighting (no plugin system)
+
 ## Usage
 
 ```bash
@@ -115,12 +161,17 @@ cd ..
 # Open an existing file
 ./subzero filename.txt
 
+# Open multiple files
+./subzero file1.cpp file2.h
+
 # Basic editing workflow
 # 1. Use arrow keys or hjkl to navigate
 # 2. Press 'i' to enter insert mode
 # 3. Type your text
 # 4. Press ESC to return to normal mode
 # 5. Type ':w' to save, ':q' to quit
+# 6. Use ':ls' to see all open buffers
+# 7. Use ':b 2' to switch to buffer 2
 ```
 
 ## Architecture
@@ -136,72 +187,95 @@ cd ..
   - UTF-8 aware text storage and manipulation
   - Cursor management with character-based positioning
   - File I/O operations
-  - Undo/redo framework
+  - Multi-buffer support
 
 - **Window System** (`window.h`)
   - Viewport management and scrolling
   - Line number display
   - Text rendering with UTF-8 support
+  - Syntax highlighting integration
   - Coordinate conversion between buffer and screen
 
 - **Editor Core** (`editor.h`)
   - Modal editing system (Normal, Insert, Visual, Command)
+  - Multi-buffer management
   - Key binding management
   - Status bar and message display
+  - Command processing and repeat counts
   - Main application loop
+
+- **Syntax Highlighting** (`syntax_highlighter.h`, `syntax_highlighter_manager.h`)
+  - Built-in C/C++ syntax highlighter
+  - Extensible highlighting framework
+  - File type detection based on extensions
+  - Color-coded syntax elements
 
 ### File Structure
 ```
 subzero/
 ├── CMakeLists.txt          # Build configuration
 ├── README.md               # This file
+├── MANUAL.md               # User manual
 ├── include/                # Header files
 │   ├── subzero.h          # Main header
+│   ├── compat.h           # C++98 compatibility layer
 │   ├── terminal*.h        # Terminal abstraction
 │   ├── utf8_utils.h       # UTF-8 utilities
 │   ├── buffer.h           # Text buffer
 │   ├── window.h           # Display window
-│   └── editor.h           # Main editor
+│   ├── editor.h           # Main editor
+│   └── *syntax_highlighter*.h # Syntax highlighting
 └── src/                   # Implementation files
     ├── main.cpp           # Application entry point
     ├── terminal*.cpp      # Platform-specific terminals
     ├── utf8_utils.cpp     # UTF-8 helper functions
     ├── buffer.cpp         # Buffer implementation
     ├── window.cpp         # Window implementation
-    └── editor.cpp         # Editor implementation
+    ├── editor.cpp         # Editor implementation
+    └── *syntax_highlighter*.cpp # Syntax highlighting
 ```
 
 ## Roadmap
 
 ### Completed ✅
-- [x] Cross-platform terminal abstraction
+- [x] Cross-platform terminal abstraction (Linux, Windows, Atari)
 - [x] UTF-8 text handling
-- [x] Basic vi modes (Normal, Insert, Command)
-- [x] File operations (open, save, new)
-- [x] Core movement and editing commands
+- [x] Complete vi modes (Normal, Insert, Visual, Command)
+- [x] File operations (open, save, new, reload)
+- [x] Multi-buffer support with buffer management commands
+- [x] Built-in syntax highlighting for C/C++
+- [x] Core movement and editing commands with repeat counts
 - [x] Status bar and user interface
 - [x] Window system with scrolling
+- [x] C++98 compatibility for embedded systems
 
 ### Planned 🚧
-- [ ] Plugin system for syntax highlighting
-- [ ] Advanced search with regex support
-- [ ] Multiple buffers/tabs
-- [ ] More complete vi command set
-- [ ] Configuration file support
+- [ ] Additional syntax highlighters (Python, JavaScript, etc.)
+- [ ] Advanced search with regex support  
 - [ ] Enhanced undo/redo system
+- [ ] Configuration file support
 - [ ] Mouse support
 - [ ] Split windows
+- [ ] Macro recording and playback
 
 ## Contributing
 
-This is a learning project focused on building a clean, modern vi clone. The architecture is designed to be extensible and maintainable.
+This project demonstrates clean, portable C++ design that works across a wide range of systems and compiler versions.
 
 ### Key Design Principles
 - **UTF-8 first**: All text operations are UTF-8 aware
-- **Cross-platform**: Clean abstraction over platform differences
-- **Modern C++**: Leveraging C++17 features and best practices
+- **Cross-platform**: Clean abstraction over platform differences  
+- **C++98 compatible**: Works with older compilers while leveraging modern design patterns
 - **Vi compatibility**: Familiar key bindings and behavior
-- **Extensible**: Plugin-ready architecture for future enhancements
+- **No external dependencies**: Self-contained with built-in functionality
+- **Embedded-friendly**: Suitable for resource-constrained systems
+
+### C++98 Compatibility Features
+- **TR1 smart pointers**: Memory management without C++11 dependencies
+- **Traditional iterators**: No range-based for loops
+- **Manual memory management**: RAII principles with explicit cleanup
+- **Compatible standard library**: Uses only C++98 standard library features
+- **Cross-compiler support**: Works with GCC 4.6+ through modern compilers
 
 ## License
 

@@ -1,7 +1,14 @@
 # Subzero Text Editor Manual
 
 ## Overview
-Subzero is a vi-like modal text editor with UTF-8 support, multi-buffer management, and syntax highlighting. This manual documents only the commands that are **actually implemented and working**.
+Subzero is a vi-like modal text editor with UTF-8 support, multi-buffer management, and built-in syntax highlighting. This manual documents only the commands that are **actually implemented and working**.
+
+**Key Features:**
+- **C++98 Compatible**: Works on modern systems and embedded platforms like Atari MiNTOS
+- **Cross-platform**: Linux (ncurses), Windows (Console API), and embedded systems  
+- **Built-in syntax highlighting**: No external dependencies required
+- **Multi-buffer support**: Work with multiple files simultaneously
+- **UTF-8 native**: Full international text support
 
 ## Modes
 
@@ -24,19 +31,19 @@ For text selection. Currently switches to visual mode but selection functionalit
 
 ## Actually Implemented Commands
 
-### Movement (Normal Mode)
+### Movement (Normal Mode) with Repeat Counts
 
 | Command | Description |
 |---------|-------------|
-| `h` or `←` | Move cursor left |
-| `j` or `↓` | Move cursor down |
-| `k` or `↑` | Move cursor up |
-| `l` or `→` | Move cursor right |
+| `h` or `←` | Move cursor left (supports repeat: `5h`) |
+| `j` or `↓` | Move cursor down (supports repeat: `10j`) |
+| `k` or `↑` | Move cursor up (supports repeat: `3k`) |
+| `l` or `→` | Move cursor right (supports repeat: `2l`) |
 | `w` | Move to next word |
 | `b` | Move to previous word |
 | `0` | Move to beginning of line |
 | `$` | Move to end of line |
-| `gg` | Move to first line (proper vi command) |
+| `gg` | Move to first line (proper vi command sequence) |
 | `G` | Move to last line |
 
 ### Text Editing (Normal Mode)
@@ -48,15 +55,15 @@ For text selection. Currently switches to visual mode but selection functionalit
 | `o` | Insert new line below and enter Insert mode |
 | `O` | Insert new line above and enter Insert mode |
 | `x` | Delete character at cursor |
-| `dd` | Delete entire line (proper vi command) |
+| `dd` | Delete entire line (supports repeat count) |
 
 ### Copy/Paste (Normal Mode)
 
 | Command | Description |
 |---------|-------------|
-| `yy` | Yank (copy) current line (proper vi command) |
-| `p` | Paste after cursor |
-| `P` | Paste before cursor |
+| `yy` | Yank (copy) current line (supports repeat count) |
+| `p` | Paste after cursor (supports repeat count) |
+| `P` | Paste before cursor (supports repeat count) |
 
 ### Undo (Normal Mode)
 
@@ -174,24 +181,26 @@ Enter Search mode with `/` (forward) or `?` (backward) from Normal mode.
 
 ---
 
-## Syntax Highlighting
+## Built-in Syntax Highlighting
 
-Subzero includes a plugin-based syntax highlighting system.
+Subzero includes built-in syntax highlighting with no external dependencies.
 
 ### Supported Languages
-- **C/C++**: Automatic detection for `.c`, `.cpp`, `.h`, `.hpp` files
+- **C/C++**: Automatic detection for `.c`, `.cpp`, `.cxx`, `.cc`, `.c++`, `.h`, `.hpp`, `.hxx`, `.hh`, `.h++`
 
 ### Color Scheme (C/C++)
-- **Blue**: Keywords (`int`, `class`, `namespace`, `return`, etc.)
-- **Bright Cyan**: Types (`bool`, `string`, `vector`, `true`, `false`)
+- **Blue**: Keywords (`int`, `class`, `namespace`, `return`, `if`, `for`, `while`, etc.)
+- **Bright Cyan**: Types (`bool`, `string`, `vector`, `true`, `false`, `size_t`)
 - **Yellow**: Strings and character literals (`"hello"`, `'c'`)
 - **Green**: Comments (`// single line`, `/* multi-line */`)
 - **Magenta**: Preprocessor directives (`#include`, `#define`)
-- **Cyan**: Numbers (`123`, `0xFF`, `3.14f`)
-- **Red**: Operators (`+`, `==`, `->`, `++`)
+- **Cyan**: Numbers (`123`, `0xFF`, `3.14f`, `0x1A2B`)
+- **Red**: Operators (`+`, `==`, `->`, `++`, `&&`, `||`)
 
 ### Automatic Detection
-Syntax highlighting is automatically applied when opening files with recognized extensions.
+- Syntax highlighting is automatically applied when opening files with recognized extensions
+- File type detection is case-insensitive
+- The active highlighter name is shown in the status bar when available
 
 ---
 
