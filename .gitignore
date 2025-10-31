@@ -1,0 +1,9 @@
+build/
+*.o
+*.exe
+*.dll
+subzero
+plugins/*.so 
+
+hello
+hello.*
