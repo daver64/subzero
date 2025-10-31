@@ -1,6 +1,7 @@
 #include "editor.h"
 #include <iostream>
 #include <sstream>
+#include <cctype>  // For tolower, isalnum
 
 namespace subzero {
 
@@ -334,6 +335,8 @@ void Editor::handleNormalMode(const KeyPress& key) {
         else if (ch == "?") searchBackward();
         else if (ch == "n") searchNext();
         else if (ch == "N") searchPrevious();
+        else if (ch == "*") searchWordForward();
+        else if (ch == "#") searchWordBackward();
         else if (ch == "v") enterVisualMode();
         else if (ch == "V") enterVisualLineMode();
         
@@ -416,8 +419,28 @@ void Editor::handleCommandMode(const KeyPress& key) {
 }
 
 void Editor::handleSearchMode(const KeyPress& key) {
-    // Similar to command mode for now
-    handleCommandMode(key);
+    if (key.isSpecialKey() && key.key == ENTER) {
+        // Execute search
+        if (!m_command_line.empty()) {
+            m_search_pattern = m_command_line;
+            m_last_search = m_search_pattern;
+            executeSearch();
+        }
+        setMode(NORMAL);
+        m_command_line.clear();
+    } else if (key.isSpecialKey() && key.key == ESCAPE) {
+        // Cancel search
+        setMode(NORMAL);
+        m_command_line.clear();
+    } else if (key.isSpecialKey() && key.key == BACKSPACE) {
+        // Delete character in search pattern
+        if (!m_command_line.empty()) {
+            m_command_line.erase(m_command_line.length() - 1);
+        }
+    } else if (key.isCharacter()) {
+        // Add character to search pattern
+        m_command_line += key.utf8_char;
+    }
 }
 
 // Movement implementations
@@ -511,13 +534,236 @@ void Editor::searchBackward() {
 }
 
 void Editor::searchNext() {
-    // TODO: Implement search
-    setStatusMessage("Search next - not implemented");
+    if (m_last_search.empty()) {
+        setStatusMessage("No previous search pattern");
+        return;
+    }
+    
+    m_search_pattern = m_last_search;
+    if (findInBuffer(m_search_pattern, m_search_forward, true)) {
+        setStatusMessage("Found: " + m_search_pattern);
+    } else {
+        setStatusMessage("Pattern not found: " + m_search_pattern);
+    }
 }
 
 void Editor::searchPrevious() {
-    // TODO: Implement search  
-    setStatusMessage("Search previous - not implemented");
+    if (m_last_search.empty()) {
+        setStatusMessage("No previous search pattern");
+        return;
+    }
+    
+    m_search_pattern = m_last_search;
+    if (findInBuffer(m_search_pattern, !m_search_forward, true)) {
+        setStatusMessage("Found: " + m_search_pattern);
+    } else {
+        setStatusMessage("Pattern not found: " + m_search_pattern);
+    }
+}
+
+void Editor::searchWordForward() {
+    std::string word = getCurrentWord();
+    if (word.empty()) {
+        setStatusMessage("No word under cursor");
+        return;
+    }
+    
+    m_search_pattern = word;
+    m_last_search = word;
+    m_search_forward = true;
+    
+    if (findInBuffer(m_search_pattern, true, true)) {
+        setStatusMessage("Found: " + m_search_pattern);
+    } else {
+        setStatusMessage("Pattern not found: " + m_search_pattern);
+    }
+}
+
+void Editor::searchWordBackward() {
+    std::string word = getCurrentWord();
+    if (word.empty()) {
+        setStatusMessage("No word under cursor");
+        return;
+    }
+    
+    m_search_pattern = word;
+    m_last_search = word;
+    m_search_forward = false;
+    
+    if (findInBuffer(m_search_pattern, false, true)) {
+        setStatusMessage("Found: " + m_search_pattern);
+    } else {
+        setStatusMessage("Pattern not found: " + m_search_pattern);
+    }
+}
+
+// Search implementation methods
+void Editor::executeSearch() {
+    if (m_search_pattern.empty()) {
+        setStatusMessage("Empty search pattern");
+        return;
+    }
+    
+    if (findInBuffer(m_search_pattern, m_search_forward, true)) {
+        setStatusMessage("Found: " + m_search_pattern);
+    } else {
+        setStatusMessage("Pattern not found: " + m_search_pattern);
+    }
+}
+
+bool Editor::findInBuffer(const std::string& pattern, bool forward, bool wrap_around) {
+    if (!m_buffer || pattern.empty()) {
+        return false;
+    }
+    
+    BufferPosition current = m_buffer->getCursor();
+    int start_line = current.line;
+    int start_col = current.column;
+    
+    // For forward search, start from next position
+    // For backward search, start from current position
+    if (forward) {
+        start_col++;
+    }
+    
+    // Search from current position
+    for (int line = start_line; line < (int)m_buffer->getLineCount(); line++) {
+        std::string line_text = m_buffer->getLine(line);
+        int search_start = (line == start_line) ? start_col : 0;
+        
+        if (forward) {
+            int found_pos;
+            if (findInLine(line_text, pattern, search_start, found_pos, true)) {
+                m_buffer->setCursor(BufferPosition(line, found_pos));
+                return true;
+            }
+        } else {
+            // Backward search in current line
+            if (line == start_line) {
+                for (int col = start_col - 1; col >= 0; col--) {
+                    if (matchesAtPosition(line_text, pattern, col, true)) {
+                        m_buffer->setCursor(BufferPosition(line, col));
+                        return true;
+                    }
+                }
+            } else {
+                // Search entire line from end
+                for (int col = (int)line_text.length() - (int)pattern.length(); col >= 0; col--) {
+                    if (matchesAtPosition(line_text, pattern, col, true)) {
+                        m_buffer->setCursor(BufferPosition(line, col));
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    
+    // If wrap_around is enabled and we haven't found anything, search from beginning/end
+    if (wrap_around) {
+        if (forward) {
+            // Search from beginning to current position
+            for (int line = 0; line <= start_line; line++) {
+                std::string line_text = m_buffer->getLine(line);
+                int search_end = (line == start_line) ? start_col : (int)line_text.length();
+                
+                int found_pos;
+                if (findInLine(line_text, pattern, 0, found_pos, true) && found_pos < search_end) {
+                    m_buffer->setCursor(BufferPosition(line, found_pos));
+                    return true;
+                }
+            }
+        } else {
+            // Search from end to current position
+            for (int line = m_buffer->getLineCount() - 1; line >= start_line; line--) {
+                std::string line_text = m_buffer->getLine(line);
+                
+                if (line == start_line) {
+                    // Already searched this part
+                    continue;
+                } else {
+                    // Search entire line from end
+                    for (int col = (int)line_text.length() - (int)pattern.length(); col >= 0; col--) {
+                        if (matchesAtPosition(line_text, pattern, col, true)) {
+                            m_buffer->setCursor(BufferPosition(line, col));
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+bool Editor::findInLine(const std::string& line, const std::string& pattern, int start_pos, int& found_pos, bool case_sensitive) {
+    if (start_pos < 0 || start_pos >= (int)line.length() || pattern.empty()) {
+        return false;
+    }
+    
+    for (int pos = start_pos; pos <= (int)line.length() - (int)pattern.length(); pos++) {
+        if (matchesAtPosition(line, pattern, pos, case_sensitive)) {
+            found_pos = pos;
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool Editor::matchesAtPosition(const std::string& text, const std::string& pattern, size_t pos, bool case_sensitive) {
+    if (pos + pattern.length() > text.length()) {
+        return false;
+    }
+    
+    for (size_t i = 0; i < pattern.length(); i++) {
+        char text_char = text[pos + i];
+        char pattern_char = pattern[i];
+        
+        if (!case_sensitive) {
+            text_char = tolower(text_char);
+            pattern_char = tolower(pattern_char);
+        }
+        
+        if (text_char != pattern_char) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+std::string Editor::getCurrentWord() {
+    if (!m_buffer) {
+        return "";
+    }
+    
+    BufferPosition cursor = m_buffer->getCursor();
+    std::string line = m_buffer->getLine(cursor.line);
+    
+    if ((int)cursor.column >= (int)line.length()) {
+        return "";
+    }
+    
+    // Find word boundaries
+    int start = cursor.column;
+    int end = cursor.column;
+    
+    // Move start back to beginning of word
+    while (start > 0 && (isalnum(line[start - 1]) || line[start - 1] == '_')) {
+        start--;
+    }
+    
+    // Move end forward to end of word
+    while (end < (int)line.length() && (isalnum(line[end]) || line[end] == '_')) {
+        end++;
+    }
+    
+    if (start == end) {
+        return "";
+    }
+    
+    return line.substr(start, end - start);
 }
 
 void Editor::enterVisualMode() { setMode(VISUAL); }

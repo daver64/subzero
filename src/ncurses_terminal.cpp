@@ -46,8 +46,8 @@ bool NcursesTerminal::initialize() {
         fflush(stdout);
         // Set a basic terminal type for systems without TERM set
         #ifdef MINTOS_PLATFORM
-        setenv("TERM", "ansi", 1);  // Basic ANSI terminal
-        printf("Set TERM=ansi for MiNTOS\n");
+        setenv("TERM", "tw100-m", 1);  // Atari TW100 terminal
+        printf("Set TERM=tw100-m for MiNTOS\n");
         #else
         setenv("TERM", "xterm", 1); // Default to xterm
         printf("Set TERM=xterm for other platforms\n");
@@ -62,8 +62,8 @@ bool NcursesTerminal::initialize() {
     if (!screen) {
         printf("newterm() failed, trying fallbacks...\n");
         fflush(stdout);
-        // Fallback: try with basic terminal types
-        const char* fallback_terms[] = {"ansi", "vt100", "dumb", NULL};
+        // Fallback: try with basic terminal types, including Atari-specific ones
+        const char* fallback_terms[] = {"tw100-m", "tw100", "tw52", "ansi", "vt100", "vt52", "dumb", NULL};
         for (int i = 0; fallback_terms[i] != NULL; i++) {
             printf("Trying terminal type: %s\n", fallback_terms[i]);
             fflush(stdout);

@@ -183,19 +183,30 @@ cmake -DCMAKE_SYSTEM_NAME=MiNT \
 
 If you get "error opening terminal" on Atari Falcon, try these solutions:
 
-1. **Set TERM environment variable:**
+1. **Atari-specific terminal types (try first):**
    ```bash
-   export TERM=ansi
+   export TERM=tw100-m   # Atari TW100 terminal (most common)
+   export TERM=tw100     # Alternative TW100
+   export TERM=tw52      # Atari TW52 terminal
    ./subzero
    ```
 
-2. **Alternative terminal types:**
+2. **Standard terminal types:**
    ```bash
-   export TERM=vt100     # For VT100 compatibility
-   export TERM=dumb      # For basic terminal support
+   export TERM=vt100     # VT100 compatibility
+   export TERM=vt52      # VT52 compatibility
+   export TERM=ansi      # Basic ANSI terminal
+   export TERM=dumb      # Minimal terminal support
    ```
 
-3. **Check terminal info database:**
+3. **Automatic detection:**
+   The program now automatically tries these terminal types in order:
+   - `tw100-m` (Atari TW100)
+   - `tw100`, `tw52` (other Atari terminals)
+   - `ansi`, `vt100`, `vt52` (standard terminals)
+   - `dumb` (fallback)
+
+4. **Check terminal info database:**
    - Ensure terminfo database is available in `/usr/share/terminfo/`
    - Or set `TERMINFO` to point to terminfo directory
    - Some MiNTOS installations may need terminfo files copied

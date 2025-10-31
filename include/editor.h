@@ -138,6 +138,15 @@ public:
     void searchBackward();
     void searchNext();
     void searchPrevious();
+    void searchWordForward();
+    void searchWordBackward();
+    
+    // Search helper methods
+    bool findInBuffer(const std::string& pattern, bool forward, bool wrap_around = true);
+    bool findInLine(const std::string& line, const std::string& pattern, int start_pos, int& found_pos, bool case_sensitive = true);
+    bool matchesAtPosition(const std::string& text, const std::string& pattern, size_t pos, bool case_sensitive = true);
+    std::string getCurrentWord();
+    void executeSearch();
     
     // Command mode
     void enterCommandMode();
