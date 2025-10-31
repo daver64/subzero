@@ -4,6 +4,7 @@
 #include "utf8_utils.h"
 #include <cstring>
 #include <cstdlib>  // For setenv
+#include <cstdio>   // For printf
 
 namespace subzero {
 
@@ -12,6 +13,8 @@ NcursesTerminal::NcursesTerminal()
     , m_raw_mode(false)
     , m_next_color_pair(1)
 {
+    printf("NcursesTerminal constructor called\n");
+    fflush(stdout);
 }
 
 NcursesTerminal::~NcursesTerminal() {
@@ -19,37 +22,62 @@ NcursesTerminal::~NcursesTerminal() {
 }
 
 bool NcursesTerminal::initialize() {
+    printf("NcursesTerminal::initialize() called\n");
+    fflush(stdout);
+    
     if (m_initialized) {
+        printf("Already initialized, returning true\n");
+        fflush(stdout);
         return true;
     }
     
+    printf("Setting locale...\n");
+    fflush(stdout);
     // Set locale for UTF-8 support
     setlocale(LC_ALL, "");
     
     // Check and set terminal environment for embedded systems
     const char* term_env = getenv("TERM");
+    printf("Current TERM=%s\n", term_env ? term_env : "NULL");
+    fflush(stdout);
+    
     if (!term_env || strlen(term_env) == 0) {
+        printf("TERM not set, setting default...\n");
+        fflush(stdout);
         // Set a basic terminal type for systems without TERM set
         #ifdef MINTOS_PLATFORM
         setenv("TERM", "ansi", 1);  // Basic ANSI terminal
+        printf("Set TERM=ansi for MiNTOS\n");
         #else
         setenv("TERM", "xterm", 1); // Default to xterm
+        printf("Set TERM=xterm for other platforms\n");
         #endif
+        fflush(stdout);
     }
     
+    printf("Attempting newterm()...\n");
+    fflush(stdout);
     // Try to initialize ncurses with error checking
     SCREEN* screen = newterm(NULL, stdout, stdin);
     if (!screen) {
+        printf("newterm() failed, trying fallbacks...\n");
+        fflush(stdout);
         // Fallback: try with basic terminal types
         const char* fallback_terms[] = {"ansi", "vt100", "dumb", NULL};
         for (int i = 0; fallback_terms[i] != NULL; i++) {
+            printf("Trying terminal type: %s\n", fallback_terms[i]);
+            fflush(stdout);
             screen = newterm(fallback_terms[i], stdout, stdin);
             if (screen) {
+                printf("Success with terminal type: %s\n", fallback_terms[i]);
+                fflush(stdout);
                 break;
             }
         }
         
         if (!screen) {
+            printf("All terminal types failed\n");
+            fflush(stdout);
             m_last_error = "Failed to initialize terminal - no compatible terminal type found";
             return false;
         }
