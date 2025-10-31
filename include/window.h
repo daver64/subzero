@@ -27,6 +27,7 @@ private:
     bool m_show_line_numbers;
     bool m_wrap_lines;
     size_t m_tab_width;
+    bool m_force_full_clear;    // Force full screen clear on next render
     
     // Syntax highlighting
     ISyntaxHighlighter* m_syntax_highlighter;

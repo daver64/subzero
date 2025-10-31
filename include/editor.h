@@ -153,6 +153,7 @@ public:
     // Command mode
     void enterCommandMode();
     void executeCommand(const std::string& command);
+    void showHelp();
     
     // Visual mode
     void enterVisualMode();

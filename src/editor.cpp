@@ -527,7 +527,10 @@ void Editor::enterInsertModeNewLineAbove() {
     setMode(INSERT);
 }
 
-void Editor::deleteCharacter() { m_buffer->deleteChar(); }
+void Editor::deleteCharacter() { 
+    m_buffer->deleteChar(); 
+    m_dirty_display = true;  // Fix: Update screen after character deletion
+}
 void Editor::deleteLine() { 
     m_buffer->deleteLine(); 
     m_dirty_display = true;  // Fix: Update screen after line deletion
@@ -892,9 +895,110 @@ void Editor::executeCommand(const std::string& command) {
         } catch (const std::exception&) {
             setErrorMessage("Invalid buffer number: " + buffer_num_str);
         }
+    } else if (command == "help" || command == "h") {
+        showHelp();
     } else {
         setErrorMessage("Unknown command: " + command);
     }
+}
+
+void Editor::showHelp() {
+    // Create a comprehensive help message
+    std::string help_text = "SubZero Editor - Command Reference\n\n";
+    
+    help_text += "=== COMMAND MODE (type : to enter) ===\n";
+    help_text += "File Operations:\n";
+    help_text += "  :w                 - Save file\n";
+    help_text += "  :w filename        - Save as filename\n";
+    help_text += "  :q                 - Quit (warns if unsaved changes)\n";
+    help_text += "  :q!                - Force quit (discard changes)\n";
+    help_text += "  :wq, :x            - Save and quit\n";
+    help_text += "  :e filename        - Edit file\n";
+    help_text += "  :e!                - Reload current file (discard changes)\n";
+    help_text += "  :e! filename       - Force edit file (discard changes)\n\n";
+    
+    help_text += "Buffer Management:\n";
+    help_text += "  :ls, :buffers      - List all open buffers\n";
+    help_text += "  :b N               - Switch to buffer N (1-based)\n";
+    help_text += "  :bn, :bnext        - Next buffer\n";
+    help_text += "  :bp, :bprev        - Previous buffer\n";
+    help_text += "  :bd, :bdelete      - Close current buffer\n";
+    help_text += "  :bd!               - Force close buffer\n\n";
+    
+    help_text += "Help:\n";
+    help_text += "  :help, :h          - Show this help\n\n";
+    
+    help_text += "=== NORMAL MODE (default mode) ===\n";
+    help_text += "Movement:\n";
+    help_text += "  h, j, k, l         - Left, Down, Up, Right\n";
+    help_text += "  Arrow keys         - Move cursor\n";
+    help_text += "  w                  - Next word\n";
+    help_text += "  b                  - Previous word\n";
+    help_text += "  0                  - Beginning of line\n";
+    help_text += "  $                  - End of line\n";
+    help_text += "  gg                 - Go to first line\n";
+    help_text += "  G                  - Go to last line\n\n";
+    
+    help_text += "Editing:\n";
+    help_text += "  i                  - Insert mode at cursor\n";
+    help_text += "  I                  - Insert at beginning of line\n";
+    help_text += "  a                  - Insert after cursor\n";
+    help_text += "  A                  - Insert at end of line\n";
+    help_text += "  o                  - Open new line below\n";
+    help_text += "  O                  - Open new line above\n";
+    help_text += "  x                  - Delete character\n";
+    help_text += "  dd                 - Delete line\n";
+    help_text += "  yy                 - Copy line\n";
+    help_text += "  p                  - Paste\n";
+    help_text += "  u                  - Undo\n\n";
+    
+    help_text += "Search:\n";
+    help_text += "  /pattern           - Search forward\n";
+    help_text += "  ?pattern           - Search backward\n";
+    help_text += "  n                  - Next search result\n";
+    help_text += "  N                  - Previous search result\n";
+    help_text += "  *                  - Search word under cursor (forward)\n";
+    help_text += "  #                  - Search word under cursor (backward)\n\n";
+    
+    help_text += "Visual Mode:\n";
+    help_text += "  v                  - Character visual mode\n";
+    help_text += "  V                  - Line visual mode\n\n";
+    
+    help_text += "=== INSERT MODE ===\n";
+    help_text += "  ESC                - Return to normal mode\n";
+    help_text += "  Printable chars    - Insert text\n";
+    help_text += "  Backspace          - Delete previous character\n";
+    help_text += "  Delete             - Delete character at cursor\n";
+    help_text += "  Enter              - New line\n";
+    help_text += "  Tab                - Insert 4 spaces\n";
+    help_text += "  Arrow keys         - Move cursor\n\n";
+    
+    help_text += "=== SEARCH MODE ===\n";
+    help_text += "  Enter              - Execute search\n";
+    help_text += "  ESC                - Cancel search\n";
+    help_text += "  Backspace          - Delete character\n";
+    help_text += "  Printable chars    - Add to search pattern\n\n";
+    
+    help_text += "=== FEATURES ===\n";
+    help_text += "- Syntax highlighting for C/C++ and Markdown files\n";
+    help_text += "- UTF-8 text support\n";
+    help_text += "- Multi-buffer editing\n";
+    help_text += "- Cross-platform (Linux, Windows, Atari MiNTOS)\n";
+    help_text += "- Performance optimized for retro systems\n";
+    
+    // Create a temporary buffer with help content
+    shared_ptr<Buffer> help_buffer(new Buffer());
+    help_buffer->setFilename("*help*");
+    
+    // Write help text to a temporary string stream and load it like a file
+    std::istringstream help_stream(help_text);
+    help_buffer->loadFromStream(help_stream);
+    
+    // Add to buffer list and switch to it
+    m_buffers.push_back(help_buffer);
+    switchToBuffer(m_buffers.size() - 1);
+    
+    setStatusMessage("Help buffer opened - :q to close");
 }
 
 void Editor::initializeKeyBindings() {
@@ -1002,6 +1106,9 @@ void Editor::switchToBuffer(int buffer_index) {
         }
         setStatusMessage("Switched to buffer " + compat::to_string(buffer_index + 1) + ": " + filename);
         m_dirty_display = true;
+        
+        // Force immediate screen clear and redraw when switching buffers
+        render();
     } else {
         setErrorMessage("No buffer " + compat::to_string(buffer_index + 1));
     }

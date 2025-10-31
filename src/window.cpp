@@ -17,6 +17,7 @@ Window::Window(shared_ptr<ITerminal> terminal, shared_ptr<Buffer> buffer)
     , m_show_line_numbers(true)
     , m_wrap_lines(false)
     , m_tab_width(4)
+    , m_force_full_clear(true)
     , m_syntax_highlighter(NULL)
 {
     if (m_terminal) {
@@ -25,9 +26,16 @@ Window::Window(shared_ptr<ITerminal> terminal, shared_ptr<Buffer> buffer)
 }
 
 void Window::setBuffer(shared_ptr<Buffer> buffer) {
+    bool buffer_changed = (m_buffer != buffer);
     m_buffer = buffer;
     m_top_line = 0;
     m_left_column = 0;
+    
+    // Force full screen clear on next render when buffer changes
+    if (buffer_changed) {
+        m_force_full_clear = true;
+    }
+    
     calculateScreenCursor();
 }
 
@@ -110,7 +118,7 @@ void Window::render() {
     static int last_window_rows = -1;
     static int last_window_cols = -1;
     
-    if (last_window_rows != m_window_size.rows || last_window_cols != m_window_size.cols) {
+    if (last_window_rows != m_window_size.rows || last_window_cols != m_window_size.cols || m_force_full_clear) {
         // Full clear only when needed
         for (int row = 0; row < m_window_size.rows; ++row) {
             Position line_start(m_window_pos.row + row, m_window_pos.col);
@@ -119,6 +127,7 @@ void Window::render() {
         }
         last_window_rows = m_window_size.rows;
         last_window_cols = m_window_size.cols;
+        m_force_full_clear = false;  // Reset the flag after clearing
     }
     
     // Render buffer lines (skip rendering lines beyond buffer end)
@@ -155,6 +164,10 @@ void Window::renderLine(size_t buffer_line, size_t screen_row) {
     
     Position line_pos(m_window_pos.row + screen_row, m_window_pos.col);
     
+    // Always clear the entire line first to remove any leftover characters from deletions
+    std::string clear_line(m_window_size.cols, ' ');
+    m_terminal->putString(clear_line, line_pos);
+    
     // Render line numbers if enabled
     if (m_show_line_numbers) {
         renderLineNumbers(screen_row, buffer_line);
@@ -173,6 +186,16 @@ void Window::renderLine(size_t buffer_line, size_t screen_row) {
         if (!m_wrap_lines && line.length() > m_left_column) {
             size_t start_col = getLineNumberWidth();
             std::string visible_text = utf8::substr(line, m_left_column, getTextAreaWidth());
+            
+            if (m_syntax_highlighter) {
+                renderSyntaxHighlightedText(visible_text, buffer_line, screen_row, start_col);
+            } else {
+                renderText(visible_text, screen_row, start_col);
+            }
+        } else if (!m_wrap_lines) {
+            // Render the entire line if it fits
+            size_t start_col = getLineNumberWidth();
+            std::string visible_text = utf8::substr(line, 0, getTextAreaWidth());
             
             if (m_syntax_highlighter) {
                 renderSyntaxHighlightedText(visible_text, buffer_line, screen_row, start_col);

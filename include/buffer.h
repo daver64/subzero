@@ -46,6 +46,7 @@ public:
     
     // File operations
     bool loadFromFile(const std::string& filename);
+    bool loadFromStream(std::istream& stream);
     bool saveToFile(const std::string& filename = "");
     bool isModified() const { return m_modified; }
     bool isReadonly() const { return m_readonly; }

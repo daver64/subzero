@@ -29,15 +29,19 @@ bool Buffer::loadFromFile(const std::string& filename) {
         return false;
     }
     
+    m_filename = filename;
+    return loadFromStream(file);
+}
+
+bool Buffer::loadFromStream(std::istream& stream) {
     m_lines.clear();
     m_cursor = BufferPosition(0, 0);
-    m_filename = filename;
     m_modified = false;
     m_undo_stack.clear();
     m_undo_index = 0;
     
     std::string line;
-    while (std::getline(file, line)) {
+    while (std::getline(stream, line)) {
         // Remove Windows line endings if present
         if (!line.empty() && line[line.length() - 1] == '\r') {
             line.erase(line.length() - 1);
