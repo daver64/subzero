@@ -17,7 +17,8 @@
 #include "window.h"
 #include "editor.h"
 #include "syntax_highlighter.h"
-#include "plugin_manager.h"
+#include "syntax_highlighter_manager.h"
+#include "cpp_syntax_highlighter.h"
 
 // Platform-specific implementations (conditionally included)
 #ifdef LINUX_PLATFORM

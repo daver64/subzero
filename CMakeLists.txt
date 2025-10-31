@@ -16,9 +16,6 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-# Create plugins directory
-add_subdirectory(plugins)
-
 # Platform-specific libraries and settings
 if(WIN32)
     # Windows console API
@@ -26,13 +23,13 @@ if(WIN32)
     # Link with Windows console libraries if needed
     # target_link_libraries(${PROJECT_NAME} PRIVATE kernel32 user32)
 elseif(UNIX AND NOT APPLE)
-    # Linux - use ncurses and dl for dynamic loading
+    # Linux - use ncurses (no need for dl library anymore)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(NCURSES REQUIRED ncurses)
     
     target_compile_definitions(${PROJECT_NAME} PRIVATE LINUX_PLATFORM)
     target_include_directories(${PROJECT_NAME} PRIVATE ${NCURSES_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES} dl)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES})
     target_compile_options(${PROJECT_NAME} PRIVATE ${NCURSES_CFLAGS_OTHER})
 elseif(APPLE)
     # macOS - use ncurses (usually pre-installed)

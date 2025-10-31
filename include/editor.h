@@ -2,7 +2,7 @@
 #include "buffer.h"
 #include "window.h"
 #include "terminal.h"
-#include "plugin_manager.h"
+#include "syntax_highlighter_manager.h"
 #include <memory>
 #include <string>
 #include <functional>
@@ -65,7 +65,7 @@ private:
     
     // Repeat and count
     int m_repeat_count;
-    std::unique_ptr<PluginManager> m_plugin_manager;
+    std::unique_ptr<SyntaxHighlighterManager> m_syntax_manager;
     
     // Last command for repeat
     std::string m_last_command;

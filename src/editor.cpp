@@ -15,7 +15,7 @@ Editor::Editor(std::shared_ptr<ITerminal> terminal)
     , m_dirty_display(true)
     , m_yank_line_mode(false)
     , m_repeat_count(0)
-    , m_plugin_manager(std::make_unique<PluginManager>())
+    , m_syntax_manager(std::unique_ptr<SyntaxHighlighterManager>(new SyntaxHighlighterManager()))
 {
     if (m_terminal) {
         // Initialize with one empty buffer
@@ -23,8 +23,7 @@ Editor::Editor(std::shared_ptr<ITerminal> terminal)
         m_window = std::make_shared<Window>(m_terminal, m_buffer);
         initializeKeyBindings();
         
-        // Load syntax highlighting plugins
-        m_plugin_manager->loadPluginsFromDirectory("./plugins");
+        // Syntax highlighting is now built-in, no plugin loading needed
     }
 }
 
@@ -71,8 +70,8 @@ bool Editor::openFile(const std::string& filename) {
     m_window->setBuffer(m_buffer);
     
     // Set up syntax highlighting for this file
-    if (m_plugin_manager) {
-        ISyntaxHighlighter* highlighter = m_plugin_manager->getHighlighterForFile(filename);
+    if (m_syntax_manager) {
+        ISyntaxHighlighter* highlighter = m_syntax_manager->getHighlighterForFile(filename);
         m_window->setSyntaxHighlighter(highlighter);
         if (file_loaded) {
             if (highlighter) {
@@ -691,8 +690,8 @@ void Editor::switchToBuffer(int buffer_index) {
         m_window->setBuffer(m_buffer);
         
         // Set up syntax highlighting for this buffer
-        if (m_plugin_manager && !m_buffer->getFilename().empty()) {
-            ISyntaxHighlighter* highlighter = m_plugin_manager->getHighlighterForFile(m_buffer->getFilename());
+        if (m_syntax_manager && !m_buffer->getFilename().empty()) {
+            ISyntaxHighlighter* highlighter = m_syntax_manager->getHighlighterForFile(m_buffer->getFilename());
             m_window->setSyntaxHighlighter(highlighter);
         }
         
