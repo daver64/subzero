@@ -326,7 +326,7 @@ subzero/
 │   ├── buffer.h           # Text buffer
 │   ├── window.h           # Display window
 │   ├── editor.h           # Main editor
-│   └── *syntax_highlighter*.h # Syntax highlighting
+│   └── syntax_highlighter.h # Syntax highlighting
 └── src/                   # Implementation files
     ├── main.cpp           # Application entry point
     ├── terminal*.cpp      # Platform-specific terminals
@@ -334,7 +334,7 @@ subzero/
     ├── buffer.cpp         # Buffer implementation
     ├── window.cpp         # Window implementation
     ├── editor.cpp         # Editor implementation
-    └── *syntax_highlighter*.cpp # Syntax highlighting
+    └── syntax_highlighter.cpp # Syntax highlighting
 ```
 
 ## Roadmap
