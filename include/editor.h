@@ -46,6 +46,7 @@ private:
     // Editor state
     bool m_running;
     bool m_dirty_display;
+    bool m_fast_mode;  // Disable expensive operations during rapid typing
     
     // Command sequence handling
     std::string m_command_sequence;

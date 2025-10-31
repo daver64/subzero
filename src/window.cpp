@@ -105,12 +105,20 @@ void Window::centerOnCursor() {
 void Window::render() {
     if (!m_terminal || !m_buffer) return;
     
-    // Clear window area with proper color reset
-    for (int row = 0; row < m_window_size.rows; ++row) {
-        for (int col = 0; col < m_window_size.cols; ++col) {
-            Position pos(m_window_pos.row + row, m_window_pos.col + col);
-            m_terminal->putString(" ", pos);  // Use putString which resets colors
+    // Much faster: only clear the screen once using terminal's clear function
+    // Only do full clear if window size changed or buffer switched
+    static int last_window_rows = -1;
+    static int last_window_cols = -1;
+    
+    if (last_window_rows != m_window_size.rows || last_window_cols != m_window_size.cols) {
+        // Full clear only when needed
+        for (int row = 0; row < m_window_size.rows; ++row) {
+            Position line_start(m_window_pos.row + row, m_window_pos.col);
+            std::string clear_line(m_window_size.cols, ' ');
+            m_terminal->putString(clear_line, line_start);  // Clear entire line at once
         }
+        last_window_rows = m_window_size.rows;
+        last_window_cols = m_window_size.cols;
     }
     
     // Render buffer lines

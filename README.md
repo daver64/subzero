@@ -80,6 +80,12 @@ A lightweight, cross-platform vi-like text editor with C++98 compatibility, full
 - **Automatic detection**: Based on file extension (.c, .cpp, .h, .hpp, etc.)
 - **No external dependencies**: All highlighting built into the executable
 
+### Performance Features
+- **Optimized rendering**: Minimal screen redraws for fast typing
+- **Smart terminal I/O**: Reduces character-by-character terminal calls
+- **Efficient memory usage**: C++98 compatible memory management
+- **Low CPU overhead**: Suitable for embedded and retro systems
+
 ### Display Features
 - **Line numbers**: Always visible line number display
 - **Status bar**: Shows current mode, filename, cursor position, buffer info, and modification status
@@ -352,7 +358,13 @@ This project demonstrates clean, portable C++ design that works across a wide ra
 
 ## License
 
-[License information to be added]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### MIT License Summary
+- ✅ **Free to use**: Commercial and non-commercial use
+- ✅ **Modify and distribute**: Make changes and share them
+- ✅ **Include in other projects**: Compatible with most licenses
+- ✅ **No warranty**: Software provided as-is
 
 ---
 

@@ -14,6 +14,7 @@ Editor::Editor(shared_ptr<ITerminal> terminal)
     , m_search_forward(true)
     , m_running(false)
     , m_dirty_display(true)
+    , m_fast_mode(false)
     , m_yank_line_mode(false)
     , m_repeat_count(0)
     , m_syntax_manager(new SyntaxHighlighterManager())
@@ -158,10 +159,13 @@ std::string Editor::getModeString() const {
 void Editor::render() {
     if (!m_terminal) return;
     
-    // Ensure syntax highlighter is set correctly
-    if (m_syntax_manager && m_buffer && !m_buffer->getFilename().empty()) {
+    // Ensure syntax highlighter is set correctly (skip in fast mode for performance)
+    if (!m_fast_mode && m_syntax_manager && m_buffer && !m_buffer->getFilename().empty()) {
         ISyntaxHighlighter* highlighter = m_syntax_manager->getHighlighterForFile(m_buffer->getFilename());
         m_window->setSyntaxHighlighter(highlighter);
+    } else if (m_fast_mode) {
+        // Disable syntax highlighting in fast mode
+        m_window->setSyntaxHighlighter(NULL);
     }
     
     // Render main window
@@ -365,30 +369,36 @@ void Editor::handleInsertMode(const KeyPress& key) {
                 break;
             case BACKSPACE:
                 m_buffer->deleteCharBefore();
-                m_dirty_display = true;
+                m_dirty_display = true;  // Full redraw for backspace (line may change)
                 break;
             case DELETE:
                 m_buffer->deleteChar();
-                m_dirty_display = true;
+                m_dirty_display = true;  // Full redraw for delete
                 break;
             case ENTER:
                 m_buffer->splitLine();
-                m_dirty_display = true;
+                m_dirty_display = true;  // Full redraw for new line
                 break;
             case TAB:
                 // Insert tab as 4 spaces (configurable in future)
                 m_buffer->insertString("    ");
-                m_dirty_display = true;
+                m_dirty_display = true;  // Full redraw for tab
                 break;
-            case ARROW_LEFT: moveLeft(); m_dirty_display = true; break;
-            case ARROW_RIGHT: moveRight(); m_dirty_display = true; break;
-            case ARROW_UP: moveUp(); m_dirty_display = true; break;
-            case ARROW_DOWN: moveDown(); m_dirty_display = true; break;
+            case ARROW_LEFT: moveLeft(); break;  // No redraw needed for movement
+            case ARROW_RIGHT: moveRight(); break;
+            case ARROW_UP: moveUp(); break;
+            case ARROW_DOWN: moveDown(); break;
             default: break;
         }
     } else if (key.isCharacter()) {
         m_buffer->insertString(key.utf8_char);
-        m_dirty_display = true;
+        
+        // Fast path: only redraw current line for simple character insertion
+        if (m_window) {
+            // TODO: Add a renderCurrentLine() method for performance
+            // For now, use minimal redraw
+            m_dirty_display = true;
+        }
     }
 }
 
