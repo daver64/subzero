@@ -1,7 +1,8 @@
 #pragma once
 #include "terminal.h"
+#include <map>
 
-#ifdef LINUX_PLATFORM
+#if defined(LINUX_PLATFORM) || defined(MINTOS_PLATFORM)
 #include <ncurses.h>
 #include <locale.h>
 
@@ -16,6 +17,7 @@ private:
     // Color pair management
     static const int MAX_COLOR_PAIRS = 64;
     int m_next_color_pair;
+    std::map<int, int> m_color_pair_cache;  // Maps color combination to pair ID
     
     // Helper methods
     int getColorPair(Color::Value fg, Color::Value bg);

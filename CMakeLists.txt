@@ -34,15 +34,43 @@ if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE WINDOWS_PLATFORM)
     # Link with Windows console libraries if needed
     # target_link_libraries(${PROJECT_NAME} PRIVATE kernel32 user32)
-elseif(UNIX AND NOT APPLE)
-    # Linux - use ncurses (no need for dl library anymore)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(NCURSES REQUIRED ncurses)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "MiNT")
+    # Atari MiNTOS - use ncurses directly (no pkg-config available)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE MINTOS_PLATFORM)
     
-    target_compile_definitions(${PROJECT_NAME} PRIVATE LINUX_PLATFORM)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${NCURSES_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES})
-    target_compile_options(${PROJECT_NAME} PRIVATE ${NCURSES_CFLAGS_OTHER})
+    # Try to find ncurses library
+    find_library(NCURSES_LIB ncurses)
+    find_library(TINFO_LIB tinfo)
+    
+    if(NCURSES_LIB)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${NCURSES_LIB})
+        # Add tinfo if it exists separately
+        if(TINFO_LIB)
+            target_link_libraries(${PROJECT_NAME} PRIVATE ${TINFO_LIB})
+        endif()
+    else()
+        # Fallback: try linking directly by name
+        target_link_libraries(${PROJECT_NAME} PRIVATE ncurses)
+        # Some systems need tinfo separately
+        target_link_libraries(${PROJECT_NAME} PRIVATE tinfo)
+    endif()
+elseif(UNIX AND NOT APPLE)
+    # Linux - use ncurses with pkg-config if available, fallback to direct linking
+    find_package(PkgConfig)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(NCURSES ncurses)
+    endif()
+    
+    if(NCURSES_FOUND)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE LINUX_PLATFORM)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${NCURSES_INCLUDE_DIRS})
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${NCURSES_LIBRARIES})
+        target_compile_options(${PROJECT_NAME} PRIVATE ${NCURSES_CFLAGS_OTHER})
+    else()
+        # Fallback: try to link ncurses directly
+        target_compile_definitions(${PROJECT_NAME} PRIVATE LINUX_PLATFORM)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ncurses)
+    endif()
 elseif(APPLE)
     # macOS - use ncurses (usually pre-installed)
     find_library(NCURSES_LIBRARY ncurses)

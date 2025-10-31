@@ -152,6 +152,12 @@ std::string Editor::getModeString() const {
 void Editor::render() {
     if (!m_terminal) return;
     
+    // Ensure syntax highlighter is set correctly
+    if (m_syntax_manager && m_buffer && !m_buffer->getFilename().empty()) {
+        ISyntaxHighlighter* highlighter = m_syntax_manager->getHighlighterForFile(m_buffer->getFilename());
+        m_window->setSyntaxHighlighter(highlighter);
+    }
+    
     // Render main window
     m_window->render();
     
@@ -286,10 +292,10 @@ void Editor::handleNormalMode(const KeyPress& key) {
                 clearCommandSequence();
                 setMode(NORMAL);
                 break;
-            case ARROW_LEFT: moveLeft(); break;
-            case ARROW_RIGHT: moveRight(); break;
-            case ARROW_UP: moveUp(); break;
-            case ARROW_DOWN: moveDown(); break;
+            case ARROW_LEFT: moveLeft(); m_dirty_display = true; break;
+            case ARROW_RIGHT: moveRight(); m_dirty_display = true; break;
+            case ARROW_UP: moveUp(); m_dirty_display = true; break;
+            case ARROW_DOWN: moveDown(); m_dirty_display = true; break;
             default: break;
         }
     } else if (key.isCharacter()) {
@@ -308,15 +314,15 @@ void Editor::handleNormalMode(const KeyPress& key) {
         }
         
         // Simple single-character commands
-        if (ch == "h") moveLeft();
-        else if (ch == "j") moveDown();
-        else if (ch == "k") moveUp();
-        else if (ch == "l") moveRight();
-        else if (ch == "w") moveWordForward();
-        else if (ch == "b") moveWordBackward();
-        else if (ch == "0") moveLineBegin();
-        else if (ch == "$") moveLineEnd();
-        else if (ch == "G") moveLastLine();
+        if (ch == "h") { moveLeft(); m_dirty_display = true; }
+        else if (ch == "j") { moveDown(); m_dirty_display = true; }
+        else if (ch == "k") { moveUp(); m_dirty_display = true; }
+        else if (ch == "l") { moveRight(); m_dirty_display = true; }
+        else if (ch == "w") { moveWordForward(); m_dirty_display = true; }
+        else if (ch == "b") { moveWordBackward(); m_dirty_display = true; }
+        else if (ch == "0") { moveLineBegin(); m_dirty_display = true; }
+        else if (ch == "$") { moveLineEnd(); m_dirty_display = true; }
+        else if (ch == "G") { moveLastLine(); m_dirty_display = true; }
         else if (ch == "i") enterInsertMode();
         else if (ch == "a") enterInsertModeAfter();
         else if (ch == "o") enterInsertModeNewLine();
@@ -359,10 +365,10 @@ void Editor::handleInsertMode(const KeyPress& key) {
                 m_buffer->insertString("    ");
                 m_dirty_display = true;
                 break;
-            case ARROW_LEFT: moveLeft(); break;
-            case ARROW_RIGHT: moveRight(); break;
-            case ARROW_UP: moveUp(); break;
-            case ARROW_DOWN: moveDown(); break;
+            case ARROW_LEFT: moveLeft(); m_dirty_display = true; break;
+            case ARROW_RIGHT: moveRight(); m_dirty_display = true; break;
+            case ARROW_UP: moveUp(); m_dirty_display = true; break;
+            case ARROW_DOWN: moveDown(); m_dirty_display = true; break;
             default: break;
         }
     } else if (key.isCharacter()) {

@@ -187,6 +187,7 @@ Subzero includes built-in syntax highlighting with no external dependencies.
 
 ### Supported Languages
 - **C/C++**: Automatic detection for `.c`, `.cpp`, `.cxx`, `.cc`, `.c++`, `.h`, `.hpp`, `.hxx`, `.hh`, `.h++`
+- **Markdown**: Automatic detection for `.md`, `.markdown`, `.mdown`, `.mkd`, `.mdx`
 
 ### Color Scheme (C/C++)
 - **Blue**: Keywords (`int`, `class`, `namespace`, `return`, `if`, `for`, `while`, etc.)
@@ -196,6 +197,17 @@ Subzero includes built-in syntax highlighting with no external dependencies.
 - **Magenta**: Preprocessor directives (`#include`, `#define`)
 - **Cyan**: Numbers (`123`, `0xFF`, `3.14f`, `0x1A2B`)
 - **Red**: Operators (`+`, `==`, `->`, `++`, `&&`, `||`)
+
+### Color Scheme (Markdown)
+- **Cyan (Bold)**: Headers (`# Title`, `## Subtitle`)
+- **Magenta (Bold)**: Header markers (`#`, `##`) and blockquote markers (`>`)
+- **Yellow (Bold)**: Bold text (`**bold**`, `__bold__`)
+- **Bright Yellow (Italic)**: Italic text (`*italic*`, `_italic_`)
+- **Green**: Code blocks (` ```code``` `) and inline code (`` `code` ``)
+- **Blue**: Link text (`[text]`)
+- **Bright Blue**: URLs (`(url)`, `http://`, `https://`)
+- **Red (Bold)**: List markers (`-`, `*`, `+`, `1.`, `2.`)
+- **Bright Cyan**: Blockquote content
 
 ### Automatic Detection
 - Syntax highlighting is automatically applied when opening files with recognized extensions

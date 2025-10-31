@@ -1,5 +1,6 @@
 #include "syntax_highlighter_manager.h"
 #include "cpp_syntax_highlighter.h"
+#include "markdown_syntax_highlighter.h"
 #include <algorithm>
 
 namespace subzero {
@@ -11,6 +12,7 @@ SyntaxHighlighterManager::SyntaxHighlighterManager() {
 
 void SyntaxHighlighterManager::registerBuiltinHighlighters() {
     m_highlighters.push_back(new CppSyntaxHighlighter());
+    m_highlighters.push_back(new MarkdownSyntaxHighlighter());
     
     // Add more highlighters here as needed
     // m_highlighters.push_back(new PythonSyntaxHighlighter());
@@ -52,21 +54,13 @@ ISyntaxHighlighter* SyntaxHighlighterManager::getHighlighterForFile(const std::s
     std::string extension = filename.substr(dot_pos + 1);
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
     
-    // Look up in extension map
+    // Look up in extension map - this ensures only ONE highlighter per extension
     std::map<std::string, ISyntaxHighlighter*>::const_iterator it = m_extension_map.find(extension);
     if (it != m_extension_map.end()) {
         return it->second;
     }
     
-    // If no direct extension match, try asking each highlighter
-    // (for content-based detection)
-    for (std::vector<ISyntaxHighlighter*>::const_iterator highlighter_it = m_highlighters.begin(); 
-         highlighter_it != m_highlighters.end(); ++highlighter_it) {
-        if ((*highlighter_it)->canHighlight(filename, "")) {
-            return *highlighter_it;
-        }
-    }
-    
+    // No highlighter found for this extension
     return NULL;
 }
 

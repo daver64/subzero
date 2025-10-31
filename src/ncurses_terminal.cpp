@@ -1,6 +1,6 @@
 #include "ncurses_terminal.h"
 
-#ifdef LINUX_PLATFORM
+#if defined(LINUX_PLATFORM) || defined(MINTOS_PLATFORM)
 #include "utf8_utils.h"
 #include <cstring>
 
@@ -113,6 +113,8 @@ void NcursesTerminal::putString(const std::string& utf8_str, const Position& pos
     if (!m_initialized) return;
     
     move(pos.row, pos.col);
+    // Ensure we're using default colors for plain text
+    resetAttributes();
     addstr(utf8_str.c_str());
 }
 
@@ -122,9 +124,14 @@ void NcursesTerminal::putStringWithColor(const std::string& utf8_str, const Posi
     
     int color_pair = getColorPair(fg, bg);
     move(pos.row, pos.col);
+    
+    // Clear any existing attributes first, then set color
+    resetAttributes();
     attron(COLOR_PAIR(color_pair));
     addstr(utf8_str.c_str());
     attroff(COLOR_PAIR(color_pair));
+    // Reset to normal attributes
+    resetAttributes();
 }
 
 KeyPress NcursesTerminal::getKey() {
@@ -222,7 +229,16 @@ std::string NcursesTerminal::getLastError() const {
 }
 
 int NcursesTerminal::getColorPair(Color::Value fg, Color::Value bg) {
-    // Simple color pair management - could be improved with caching
+    // Create a unique key for this color combination
+    int key = (static_cast<int>(fg) << 8) | static_cast<int>(bg);
+    
+    // Check if we already have this color pair
+    std::map<int, int>::iterator it = m_color_pair_cache.find(key);
+    if (it != m_color_pair_cache.end()) {
+        return it->second;  // Return existing color pair
+    }
+    
+    // Create new color pair if we have room
     if (m_next_color_pair >= MAX_COLOR_PAIRS) {
         return 1; // Fallback to default
     }
@@ -230,8 +246,13 @@ int NcursesTerminal::getColorPair(Color::Value fg, Color::Value bg) {
     int fg_color = mapColor(fg);
     int bg_color = mapColor(bg);
     
-    init_pair(m_next_color_pair, fg_color, bg_color);
-    return m_next_color_pair++;
+    int pair_id = m_next_color_pair++;
+    init_pair(pair_id, fg_color, bg_color);
+    
+    // Cache this color pair for future use
+    m_color_pair_cache[key] = pair_id;
+    
+    return pair_id;
 }
 
 int NcursesTerminal::mapColor(Color::Value color) {

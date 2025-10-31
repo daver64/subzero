@@ -105,11 +105,11 @@ void Window::centerOnCursor() {
 void Window::render() {
     if (!m_terminal || !m_buffer) return;
     
-    // Clear window area
+    // Clear window area with proper color reset
     for (int row = 0; row < m_window_size.rows; ++row) {
         for (int col = 0; col < m_window_size.cols; ++col) {
             Position pos(m_window_pos.row + row, m_window_pos.col + col);
-            m_terminal->putChar(" ", pos);
+            m_terminal->putString(" ", pos);  // Use putString which resets colors
         }
     }
     
@@ -297,6 +297,13 @@ void Window::renderText(const std::string& text, size_t screen_row, size_t start
 }
 
 void Window::renderSyntaxHighlightedText(const std::string& text, size_t buffer_line, size_t screen_row, size_t start_col) {
+    // If no syntax highlighter is set, try to get one based on buffer filename
+    if (!m_syntax_highlighter && m_buffer) {
+        // This shouldn't happen, but let's be defensive
+        renderText(text, screen_row, start_col);
+        return;
+    }
+    
     if (!m_terminal || !m_syntax_highlighter) {
         renderText(text, screen_row, start_col);
         return;
@@ -308,7 +315,6 @@ void Window::renderSyntaxHighlightedText(const std::string& text, size_t buffer_
     
     // Get context lines for multiline constructs
     std::vector<std::string> context_lines;
-    // For now, we'll just use the current line
     context_lines.push_back(full_line);
     
     // Get syntax highlighting
@@ -323,55 +329,36 @@ void Window::renderSyntaxHighlightedText(const std::string& text, size_t buffer_
         return;
     }
     
-    // Render with syntax highlighting
-    size_t text_pos = 0;
+    // Use original simple approach: render the whole text, then apply tokens on top
+    // First render the entire text with default color - ALWAYS do this first
+    m_terminal->putString(text, base_pos);
+    
+    // Then apply colored tokens on top
     size_t visible_start = m_left_column;
-    size_t visible_end = visible_start + getTextAreaWidth();
     
     for (std::vector<SyntaxToken>::const_iterator token_it = highlight_result.tokens.begin(); 
          token_it != highlight_result.tokens.end(); ++token_it) {
         const SyntaxToken& token = *token_it;
-        // Skip tokens that are before our visible area
-        if (token.start_pos + token.length <= visible_start) {
+        
+        // Skip tokens completely outside visible area
+        if (token.start_pos + token.length <= visible_start || 
+            token.start_pos >= visible_start + text.length()) {
             continue;
         }
         
-        // Stop if token is beyond our visible area
-        if (token.start_pos >= visible_end) {
-            break;
-        }
+        // Calculate visible portion of token
+        size_t token_vis_start = std::max(token.start_pos, visible_start);
+        size_t token_vis_end = std::min(token.start_pos + token.length, visible_start + text.length());
         
-        // Render any unhighlighted text before this token
-        if (token.start_pos > text_pos && token.start_pos > visible_start) {
-            size_t start = std::max(text_pos, visible_start) - visible_start;
-            size_t end = token.start_pos - visible_start;
-            if (start < text.length() && end <= text.length() && start < end) {
-                std::string plain_text = text.substr(start, end - start);
-                Position pos(base_pos.row, base_pos.col + start);
-                m_terminal->putString(plain_text, pos);
+        if (token_vis_start < token_vis_end) {
+            size_t text_start = token_vis_start - visible_start;
+            size_t text_len = token_vis_end - token_vis_start;
+            
+            if (text_start < text.length() && text_start + text_len <= text.length()) {
+                std::string token_text = text.substr(text_start, text_len);
+                Position token_pos(base_pos.row, base_pos.col + text_start);
+                m_terminal->putStringWithColor(token_text, token_pos, token.color, Color::BLACK);
             }
-        }
-        
-        // Render the highlighted token
-        size_t token_start = std::max(token.start_pos, visible_start) - visible_start;
-        size_t token_end = std::min(token.start_pos + token.length, visible_end) - visible_start;
-        
-        if (token_start < text.length() && token_end <= text.length() && token_start < token_end) {
-            std::string token_text = text.substr(token_start, token_end - token_start);
-            Position pos(base_pos.row, base_pos.col + token_start);
-            m_terminal->putStringWithColor(token_text, pos, token.color, token.bg_color);
-        }
-        
-        text_pos = token.start_pos + token.length;
-    }
-    
-    // Render any remaining unhighlighted text
-    if (text_pos < visible_end && text_pos > visible_start) {
-        size_t start = text_pos - visible_start;
-        if (start < text.length()) {
-            std::string remaining_text = text.substr(start);
-            Position pos(base_pos.row, base_pos.col + start);
-            m_terminal->putString(remaining_text, pos);
         }
     }
 }

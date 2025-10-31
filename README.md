@@ -9,7 +9,7 @@ A lightweight, cross-platform vi-like text editor with C++98 compatibility, full
 - **C++98 Compatible**: Works with older compilers including GCC 4.6 on Atari Falcon
 - **UTF-8 native**: Full international text support with proper character-aware operations
 - **Vi-compatible**: Familiar vi key bindings and modal editing
-- **Built-in syntax highlighting**: C/C++ syntax highlighting without external dependencies
+- **Built-in syntax highlighting**: C/C++ and Markdown syntax highlighting without external dependencies
 - **Multi-buffer support**: Work with multiple files simultaneously
 
 ### Vi Modes Implemented
@@ -126,12 +126,38 @@ export CC=m68k-atari-mint-gcc
 export CXX=m68k-atari-mint-g++
 
 # Configure for Atari target
-cmake -DCMAKE_SYSTEM_NAME=Generic \
+cmake -DCMAKE_SYSTEM_NAME=MiNT \
       -DCMAKE_C_COMPILER=m68k-atari-mint-gcc \
       -DCMAKE_CXX_COMPILER=m68k-atari-mint-g++ \
+      -DCMAKE_FIND_ROOT_PATH=/usr/m68k-atari-mint \
       ..
 
 make
+```
+
+**Note**: If you get linking errors about missing `-ltinfo`, the CMake build now automatically handles this by:
+1. First trying to find both `ncurses` and `tinfo` libraries separately
+2. If found, links both libraries properly
+3. If not found, falls back to linking both `-lncurses -ltinfo` by name
+
+If you still have issues, you can manually specify library paths:
+```bash
+# Manual library specification if auto-detection fails
+cmake -DCMAKE_SYSTEM_NAME=MiNT \
+      -DCMAKE_C_COMPILER=m68k-atari-mint-gcc \
+      -DCMAKE_CXX_COMPILER=m68k-atari-mint-g++ \
+      -DCMAKE_EXE_LINKER_FLAGS="-lncurses -ltinfo" \
+      ..
+```
+
+Or if your MiNTOS toolchain has ncurses built without separate tinfo:
+```bash
+# For ncurses built with integrated terminfo
+cmake -DCMAKE_SYSTEM_NAME=MiNT \
+      -DCMAKE_C_COMPILER=m68k-atari-mint-gcc \
+      -DCMAKE_CXX_COMPILER=m68k-atari-mint-g++ \
+      -DCMAKE_EXE_LINKER_FLAGS="-lncurses" \
+      ..
 ```
 
 ### Platform-Specific Notes
