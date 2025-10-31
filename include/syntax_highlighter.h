@@ -2,7 +2,7 @@
 #include "terminal_types.h"
 #include <string>
 #include <vector>
-#include <memory>
+#include "compat.h"
 
 namespace subzero {
 
@@ -32,7 +32,7 @@ struct SyntaxHighlightResult {
 // Plugin interface that syntax highlighters must implement
 class ISyntaxHighlighter {
 public:
-    virtual ~ISyntaxHighlighter() = default;
+    virtual ~ISyntaxHighlighter() {}
     
     // Plugin metadata
     virtual std::string getName() const = 0;

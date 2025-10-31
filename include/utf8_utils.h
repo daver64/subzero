@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <cstdint>
+#include <stdint.h>  // C++98 compatible header
 
 namespace subzero {
 namespace utf8 {

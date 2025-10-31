@@ -14,7 +14,7 @@ private:
     std::string m_last_error;
     
     // Color pair management
-    static constexpr int MAX_COLOR_PAIRS = 64;
+    static const int MAX_COLOR_PAIRS = 64;
     int m_next_color_pair;
     
     // Helper methods
@@ -27,34 +27,34 @@ public:
     virtual ~NcursesTerminal();
     
     // ITerminal interface
-    bool initialize() override;
-    void shutdown() override;
-    bool isInitialized() const override;
+    bool initialize();
+    void shutdown();
+    bool isInitialized() const;
     
-    TerminalSize getSize() const override;
-    void clear() override;
-    void refresh() override;
+    TerminalSize getSize() const;
+    void clear();
+    void refresh();
     
-    void setCursor(const Position& pos) override;
-    Position getCursor() const override;
-    void showCursor(bool visible) override;
+    void setCursor(const Position& pos);
+    Position getCursor() const;
+    void showCursor(bool visible);
     
-    void putChar(const std::string& utf8_char, const Position& pos) override;
-    void putString(const std::string& utf8_str, const Position& pos) override;
+    void putChar(const std::string& utf8_char, const Position& pos);
+    void putString(const std::string& utf8_str, const Position& pos);
     void putStringWithColor(const std::string& utf8_str, const Position& pos, 
-                           Color::Value fg, Color::Value bg = Color::BLACK) override;
+                           Color::Value fg, Color::Value bg = Color::BLACK);
     
-    KeyPress getKey() override;
-    bool hasInput() override;
+    KeyPress getKey();
+    bool hasInput();
     
-    void setColors(Color::Value fg, Color::Value bg) override;
-    void resetAttributes() override;
+    void setColors(Color::Value fg, Color::Value bg);
+    void resetAttributes();
     
-    void enableRawMode() override;
-    void disableRawMode() override;
-    bool isRawMode() const override;
+    void enableRawMode();
+    void disableRawMode();
+    bool isRawMode() const;
     
-    std::string getLastError() const override;
+    std::string getLastError() const;
 };
 
 } // namespace subzero

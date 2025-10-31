@@ -6,7 +6,7 @@
 
 namespace subzero {
 
-Window::Window(std::shared_ptr<ITerminal> terminal, std::shared_ptr<Buffer> buffer)
+Window::Window(shared_ptr<ITerminal> terminal, shared_ptr<Buffer> buffer)
     : m_buffer(buffer)
     , m_terminal(terminal)
     , m_window_pos(0, 0)
@@ -17,14 +17,14 @@ Window::Window(std::shared_ptr<ITerminal> terminal, std::shared_ptr<Buffer> buff
     , m_show_line_numbers(true)
     , m_wrap_lines(false)
     , m_tab_width(4)
-    , m_syntax_highlighter(nullptr)
+    , m_syntax_highlighter(NULL)
 {
     if (m_terminal) {
         m_window_size = m_terminal->getSize();
     }
 }
 
-void Window::setBuffer(std::shared_ptr<Buffer> buffer) {
+void Window::setBuffer(shared_ptr<Buffer> buffer) {
     m_buffer = buffer;
     m_top_line = 0;
     m_left_column = 0;
@@ -328,7 +328,9 @@ void Window::renderSyntaxHighlightedText(const std::string& text, size_t buffer_
     size_t visible_start = m_left_column;
     size_t visible_end = visible_start + getTextAreaWidth();
     
-    for (const auto& token : highlight_result.tokens) {
+    for (std::vector<SyntaxToken>::const_iterator token_it = highlight_result.tokens.begin(); 
+         token_it != highlight_result.tokens.end(); ++token_it) {
+        const SyntaxToken& token = *token_it;
         // Skip tokens that are before our visible area
         if (token.start_pos + token.length <= visible_start) {
             continue;

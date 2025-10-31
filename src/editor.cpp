@@ -4,27 +4,31 @@
 
 namespace subzero {
 
-Editor::Editor(std::shared_ptr<ITerminal> terminal)
+Editor::Editor(shared_ptr<ITerminal> terminal)
     : m_terminal(terminal)
-    , m_buffer(std::make_shared<Buffer>())
+    , m_buffer(shared_ptr<Buffer>(new Buffer()))
     , m_current_buffer_index(0)
-    , m_mode(EditorMode::NORMAL)
-    , m_previous_mode(EditorMode::NORMAL)
+    , m_mode(NORMAL)
+    , m_previous_mode(NORMAL)
     , m_search_forward(true)
     , m_running(false)
     , m_dirty_display(true)
     , m_yank_line_mode(false)
     , m_repeat_count(0)
-    , m_syntax_manager(std::unique_ptr<SyntaxHighlighterManager>(new SyntaxHighlighterManager()))
+    , m_syntax_manager(new SyntaxHighlighterManager())
 {
     if (m_terminal) {
         // Initialize with one empty buffer
         m_buffers.push_back(m_buffer);
-        m_window = std::make_shared<Window>(m_terminal, m_buffer);
+        m_window = shared_ptr<Window>(new Window(m_terminal, m_buffer));
         initializeKeyBindings();
         
         // Syntax highlighting is now built-in, no plugin loading needed
     }
+}
+
+Editor::~Editor() {
+    delete m_syntax_manager;
 }
 
 void Editor::run() {
@@ -53,7 +57,7 @@ void Editor::run() {
 }
 
 bool Editor::openFile(const std::string& filename) {
-    auto new_buffer = std::make_shared<Buffer>();
+    shared_ptr<Buffer> new_buffer(new Buffer());
     
     // Try to load the file
     bool file_loaded = new_buffer->loadFromFile(filename);
@@ -76,23 +80,23 @@ bool Editor::openFile(const std::string& filename) {
         if (file_loaded) {
             if (highlighter) {
                 setStatusMessage("Opened: " + filename + " (" + highlighter->getName() + ") [Buffer " + 
-                               std::to_string(m_current_buffer_index + 1) + "]");
+                               compat::to_string(m_current_buffer_index + 1) + "]");
             } else {
-                setStatusMessage("Opened: " + filename + " [Buffer " + std::to_string(m_current_buffer_index + 1) + "]");
+                setStatusMessage("Opened: " + filename + " [Buffer " + compat::to_string(m_current_buffer_index + 1) + "]");
             }
         } else {
             if (highlighter) {
                 setStatusMessage("New file: " + filename + " (" + highlighter->getName() + ") [Buffer " + 
-                               std::to_string(m_current_buffer_index + 1) + "]");
+                               compat::to_string(m_current_buffer_index + 1) + "]");
             } else {
-                setStatusMessage("New file: " + filename + " [Buffer " + std::to_string(m_current_buffer_index + 1) + "]");
+                setStatusMessage("New file: " + filename + " [Buffer " + compat::to_string(m_current_buffer_index + 1) + "]");
             }
         }
     } else {
         if (file_loaded) {
-            setStatusMessage("Opened: " + filename + " [Buffer " + std::to_string(m_current_buffer_index + 1) + "]");
+            setStatusMessage("Opened: " + filename + " [Buffer " + compat::to_string(m_current_buffer_index + 1) + "]");
         } else {
-            setStatusMessage("New file: " + filename + " [Buffer " + std::to_string(m_current_buffer_index + 1) + "]");
+            setStatusMessage("New file: " + filename + " [Buffer " + compat::to_string(m_current_buffer_index + 1) + "]");
         }
     }
     
@@ -112,7 +116,7 @@ bool Editor::saveFile(const std::string& filename) {
 }
 
 bool Editor::newFile() {
-    m_buffer = std::make_shared<Buffer>();
+    m_buffer = shared_ptr<Buffer>(new Buffer());
     m_buffer->setCursor(BufferPosition(0, 0));
     
     m_window->setBuffer(m_buffer);
@@ -126,7 +130,7 @@ void Editor::setMode(EditorMode mode) {
     m_mode = mode;
     m_dirty_display = true;
     
-    if (mode == EditorMode::INSERT) {
+    if (mode == INSERT) {
         m_terminal->showCursor(true);
     } else {
         m_terminal->showCursor(true); // Keep cursor visible in all modes for now
@@ -135,12 +139,12 @@ void Editor::setMode(EditorMode mode) {
 
 std::string Editor::getModeString() const {
     switch (m_mode) {
-        case EditorMode::NORMAL: return "NORMAL";
-        case EditorMode::INSERT: return "INSERT";
-        case EditorMode::VISUAL: return "VISUAL";
-        case EditorMode::VISUAL_LINE: return "VISUAL LINE";
-        case EditorMode::COMMAND: return "COMMAND";
-        case EditorMode::SEARCH: return "SEARCH";
+        case NORMAL: return "NORMAL";
+        case INSERT: return "INSERT";
+        case VISUAL: return "VISUAL";
+        case VISUAL_LINE: return "VISUAL LINE";
+        case COMMAND: return "COMMAND";
+        case SEARCH: return "SEARCH";
         default: return "UNKNOWN";
     }
 }
@@ -201,10 +205,10 @@ void Editor::renderStatusBar() {
     }
     
     // Command line mode
-    if (m_mode == EditorMode::COMMAND) {
+    if (m_mode == COMMAND) {
         status.str("");
         status << ":" << m_command_line;
-    } else if (m_mode == EditorMode::SEARCH) {
+    } else if (m_mode == SEARCH) {
         status.str("");
         status << (m_search_forward ? "/" : "?") << m_command_line;
     }
@@ -251,20 +255,20 @@ void Editor::handleInput() {
     clearMessages();
     
     switch (m_mode) {
-        case EditorMode::NORMAL:
+        case NORMAL:
             handleNormalMode(key);
             break;
-        case EditorMode::INSERT:
+        case INSERT:
             handleInsertMode(key);
             break;
-        case EditorMode::VISUAL:
-        case EditorMode::VISUAL_LINE:
+        case VISUAL:
+        case VISUAL_LINE:
             handleVisualMode(key);
             break;
-        case EditorMode::COMMAND:
+        case COMMAND:
             handleCommandMode(key);
             break;
-        case EditorMode::SEARCH:
+        case SEARCH:
             handleSearchMode(key);
             break;
     }
@@ -278,14 +282,14 @@ void Editor::handleInput() {
 void Editor::handleNormalMode(const KeyPress& key) {
     if (key.isSpecialKey()) {
         switch (key.key) {
-            case Key::ESCAPE:
+            case ESCAPE:
                 clearCommandSequence();
-                setMode(EditorMode::NORMAL);
+                setMode(NORMAL);
                 break;
-            case Key::ARROW_LEFT: moveLeft(); break;
-            case Key::ARROW_RIGHT: moveRight(); break;
-            case Key::ARROW_UP: moveUp(); break;
-            case Key::ARROW_DOWN: moveDown(); break;
+            case ARROW_LEFT: moveLeft(); break;
+            case ARROW_RIGHT: moveRight(); break;
+            case ARROW_UP: moveUp(); break;
+            case ARROW_DOWN: moveDown(); break;
             default: break;
         }
     } else if (key.isCharacter()) {
@@ -335,30 +339,30 @@ void Editor::handleNormalMode(const KeyPress& key) {
 void Editor::handleInsertMode(const KeyPress& key) {
     if (key.isSpecialKey()) {
         switch (key.key) {
-            case Key::ESCAPE:
-                setMode(EditorMode::NORMAL);
+            case ESCAPE:
+                setMode(NORMAL);
                 break;
-            case Key::BACKSPACE:
+            case BACKSPACE:
                 m_buffer->deleteCharBefore();
                 m_dirty_display = true;
                 break;
-            case Key::DELETE:
+            case DELETE:
                 m_buffer->deleteChar();
                 m_dirty_display = true;
                 break;
-            case Key::ENTER:
+            case ENTER:
                 m_buffer->splitLine();
                 m_dirty_display = true;
                 break;
-            case Key::TAB:
+            case TAB:
                 // Insert tab as 4 spaces (configurable in future)
                 m_buffer->insertString("    ");
                 m_dirty_display = true;
                 break;
-            case Key::ARROW_LEFT: moveLeft(); break;
-            case Key::ARROW_RIGHT: moveRight(); break;
-            case Key::ARROW_UP: moveUp(); break;
-            case Key::ARROW_DOWN: moveDown(); break;
+            case ARROW_LEFT: moveLeft(); break;
+            case ARROW_RIGHT: moveRight(); break;
+            case ARROW_UP: moveUp(); break;
+            case ARROW_DOWN: moveDown(); break;
             default: break;
         }
     } else if (key.isCharacter()) {
@@ -369,8 +373,8 @@ void Editor::handleInsertMode(const KeyPress& key) {
 
 void Editor::handleVisualMode(const KeyPress& key) {
     // Simplified visual mode - just movement and escape
-    if (key.isSpecialKey() && key.key == Key::ESCAPE) {
-        setMode(EditorMode::NORMAL);
+    if (key.isSpecialKey() && key.key == ESCAPE) {
+        setMode(NORMAL);
     } else {
         // Use normal mode movement for now
         handleNormalMode(key);
@@ -380,16 +384,16 @@ void Editor::handleVisualMode(const KeyPress& key) {
 void Editor::handleCommandMode(const KeyPress& key) {
     if (key.isSpecialKey()) {
         switch (key.key) {
-            case Key::ESCAPE:
-                setMode(EditorMode::NORMAL);
+            case ESCAPE:
+                setMode(NORMAL);
                 m_command_line.clear();
                 break;
-            case Key::ENTER:
+            case ENTER:
                 executeCommand(m_command_line);
-                setMode(EditorMode::NORMAL);
+                setMode(NORMAL);
                 m_command_line.clear();
                 break;
-            case Key::BACKSPACE:
+            case BACKSPACE:
                 if (!m_command_line.empty()) {
                     // Remove the last UTF-8 character properly
                     size_t char_count = utf8::length(m_command_line);
@@ -447,17 +451,17 @@ void Editor::moveLastLine() {
 }
 
 // Edit mode implementations
-void Editor::enterInsertMode() { setMode(EditorMode::INSERT); }
-void Editor::enterInsertModeAfter() { moveRight(); setMode(EditorMode::INSERT); }
+void Editor::enterInsertMode() { setMode(INSERT); }
+void Editor::enterInsertModeAfter() { moveRight(); setMode(INSERT); }
 
 void Editor::enterInsertModeNewLine() {
     m_buffer->insertLineAfter();
-    setMode(EditorMode::INSERT);
+    setMode(INSERT);
 }
 
 void Editor::enterInsertModeNewLineAbove() {
     m_buffer->insertLine();
-    setMode(EditorMode::INSERT);
+    setMode(INSERT);
 }
 
 void Editor::deleteCharacter() { m_buffer->deleteChar(); }
@@ -484,18 +488,18 @@ void Editor::pasteBefore() {
 void Editor::undoChange() { m_buffer->undo(); }
 
 void Editor::enterCommandMode() {
-    setMode(EditorMode::COMMAND);
+    setMode(COMMAND);
     m_command_line.clear();
 }
 
 void Editor::searchForward() {
-    setMode(EditorMode::SEARCH);
+    setMode(SEARCH);
     m_search_forward = true;
     m_command_line.clear();
 }
 
 void Editor::searchBackward() {
-    setMode(EditorMode::SEARCH);
+    setMode(SEARCH);
     m_search_forward = false;
     m_command_line.clear();
 }
@@ -510,8 +514,8 @@ void Editor::searchPrevious() {
     setStatusMessage("Search previous - not implemented");
 }
 
-void Editor::enterVisualMode() { setMode(EditorMode::VISUAL); }
-void Editor::enterVisualLineMode() { setMode(EditorMode::VISUAL_LINE); }
+void Editor::enterVisualMode() { setMode(VISUAL); }
+void Editor::enterVisualLineMode() { setMode(VISUAL_LINE); }
 
 void Editor::executeCommand(const std::string& command) {
     if (command.empty()) return;
@@ -594,7 +598,7 @@ void Editor::executeCommand(const std::string& command) {
     } else if (command.substr(0, 2) == "b ") {
         std::string buffer_num_str = command.substr(2);
         try {
-            int buffer_num = std::stoi(buffer_num_str);
+            int buffer_num = compat::stoi(buffer_num_str);
             switchToBuffer(buffer_num - 1);  // Convert to 0-based index
         } catch (const std::exception&) {
             setErrorMessage("Invalid buffer number: " + buffer_num_str);
@@ -627,13 +631,22 @@ void Editor::handleCommandSequence(const std::string& key) {
     
     // Check for complete commands
     if (m_command_sequence == "gg") {
-        applyRepeatCount([this]() { moveFirstLine(); });
+        for (int i = 0; i < (m_repeat_count > 0 ? m_repeat_count : 1); ++i) {
+            moveFirstLine();
+        }
+        m_repeat_count = 0;
         clearCommandSequence();
     } else if (m_command_sequence == "dd") {
-        applyRepeatCount([this]() { deleteLine(); });
+        for (int i = 0; i < (m_repeat_count > 0 ? m_repeat_count : 1); ++i) {
+            deleteLine();
+        }
+        m_repeat_count = 0;
         clearCommandSequence();
     } else if (m_command_sequence == "yy") {
-        applyRepeatCount([this]() { yankLine(); });
+        for (int i = 0; i < (m_repeat_count > 0 ? m_repeat_count : 1); ++i) {
+            yankLine();
+        }
+        m_repeat_count = 0;
         clearCommandSequence();
     } else if (m_command_sequence.length() == 1) {
         // Single character that might be part of a sequence
@@ -641,10 +654,16 @@ void Editor::handleCommandSequence(const std::string& key) {
             // Wait for next character
             return;
         } else if (key == "p") {
-            applyRepeatCount([this]() { pasteAfter(); });
+            for (int i = 0; i < (m_repeat_count > 0 ? m_repeat_count : 1); ++i) {
+                pasteAfter();
+            }
+            m_repeat_count = 0;
             clearCommandSequence();
         } else if (key == "P") {
-            applyRepeatCount([this]() { pasteBefore(); });
+            for (int i = 0; i < (m_repeat_count > 0 ? m_repeat_count : 1); ++i) {
+                pasteBefore();
+            }
+            m_repeat_count = 0;
             clearCommandSequence();
         } else {
             // Invalid sequence
@@ -675,13 +694,6 @@ bool Editor::isValidCommandStart(const std::string& key) const {
     return key == "g" || key == "d" || key == "y" || key == "p" || key == "P";
 }
 
-void Editor::applyRepeatCount(std::function<void()> action) {
-    int count = std::max(1, m_repeat_count);
-    for (int i = 0; i < count; ++i) {
-        action();
-    }
-}
-
 // Buffer management methods
 void Editor::switchToBuffer(int buffer_index) {
     if (buffer_index >= 0 && buffer_index < static_cast<int>(m_buffers.size())) {
@@ -699,10 +711,10 @@ void Editor::switchToBuffer(int buffer_index) {
         if (filename.empty()) {
             filename = "[No Name]";
         }
-        setStatusMessage("Switched to buffer " + std::to_string(buffer_index + 1) + ": " + filename);
+        setStatusMessage("Switched to buffer " + compat::to_string(buffer_index + 1) + ": " + filename);
         m_dirty_display = true;
     } else {
-        setErrorMessage("No buffer " + std::to_string(buffer_index + 1));
+        setErrorMessage("No buffer " + compat::to_string(buffer_index + 1));
     }
 }
 
@@ -726,7 +738,7 @@ bool Editor::closeBuffer(int buffer_index) {
     }
     
     if (buffer_index < 0 || buffer_index >= static_cast<int>(m_buffers.size())) {
-        setErrorMessage("No buffer " + std::to_string(buffer_index + 1));
+        setErrorMessage("No buffer " + compat::to_string(buffer_index + 1));
         return false;
     }
     
@@ -757,7 +769,7 @@ bool Editor::closeBuffer(int buffer_index) {
     m_buffer = m_buffers[m_current_buffer_index];
     m_window->setBuffer(m_buffer);
     
-    setStatusMessage("Buffer closed. Now showing buffer " + std::to_string(m_current_buffer_index + 1));
+    setStatusMessage("Buffer closed. Now showing buffer " + compat::to_string(m_current_buffer_index + 1));
     m_dirty_display = true;
     return true;
 }
@@ -772,7 +784,7 @@ void Editor::listBuffers() {
             filename = "[No Name]";
         }
         
-        buffer_list += "  " + std::to_string(i + 1) + marker + modified + " " + filename + "\n";
+        buffer_list += "  " + compat::to_string(i + 1) + marker + modified + " " + filename + "\n";
     }
     
     setStatusMessage(buffer_list);

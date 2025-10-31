@@ -33,7 +33,7 @@ struct TerminalSize {
     }
 };
 
-enum class Key {
+enum Key {
     // Printable characters will be handled separately
     ESCAPE = 256, BACKSPACE, DELETE, TAB, ENTER,
     ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT,
@@ -52,7 +52,7 @@ struct KeyPress {
     bool is_character;
     
     KeyPress(Key k) : key(k), is_character(false) {}
-    KeyPress(const std::string& utf8) : key(Key::UNKNOWN), utf8_char(utf8), is_character(true) {}
+    KeyPress(const std::string& utf8) : key(UNKNOWN), utf8_char(utf8), is_character(true) {}
     
     bool isCharacter() const { return is_character; }
     bool isSpecialKey() const { return !is_character; }

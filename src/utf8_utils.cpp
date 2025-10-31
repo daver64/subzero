@@ -1,5 +1,5 @@
 #include "utf8_utils.h"
-#include <cstdint>
+#include "compat.h"
 
 namespace subzero {
 namespace utf8 {

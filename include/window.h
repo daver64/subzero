@@ -3,14 +3,14 @@
 #include "terminal.h"
 #include "terminal_types.h"
 #include "syntax_highlighter.h"
-#include <memory>
+#include "compat.h"
 
 namespace subzero {
 
 class Window {
 private:
-    std::shared_ptr<Buffer> m_buffer;
-    std::shared_ptr<ITerminal> m_terminal;
+    shared_ptr<Buffer> m_buffer;
+    shared_ptr<ITerminal> m_terminal;
     
     // Window dimensions and position
     Position m_window_pos;      // Terminal position of window
@@ -32,7 +32,7 @@ private:
     ISyntaxHighlighter* m_syntax_highlighter;
     
 public:
-    Window(std::shared_ptr<ITerminal> terminal, std::shared_ptr<Buffer> buffer);
+    Window(shared_ptr<ITerminal> terminal, shared_ptr<Buffer> buffer);
     
     // Window management
     void setPosition(const Position& pos) { m_window_pos = pos; }
@@ -41,8 +41,8 @@ public:
     const TerminalSize& getSize() const { return m_window_size; }
     
     // Buffer management
-    void setBuffer(std::shared_ptr<Buffer> buffer);
-    std::shared_ptr<Buffer> getBuffer() const { return m_buffer; }
+    void setBuffer(shared_ptr<Buffer> buffer);
+    shared_ptr<Buffer> getBuffer() const { return m_buffer; }
     
     // Display control
     void setShowLineNumbers(bool show) { m_show_line_numbers = show; }

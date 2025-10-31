@@ -3,9 +3,21 @@ cmake_minimum_required(VERSION 3.10)
 # Project name
 project(subzero VERSION 1.0.0 LANGUAGES CXX)
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+# Set C++ standard - use C++98 for Atari compatibility
+set(CMAKE_CXX_STANDARD 98)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add option for gnu++0x if available
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Try to use gnu++0x if supported, fallback to gnu++98
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-std=gnu++0x" COMPILER_SUPPORTS_CXX0X)
+    if(COMPILER_SUPPORTS_CXX0X)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++98")
+    endif()
+endif()
 
 # Add include directory
 include_directories(include)

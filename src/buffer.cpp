@@ -1,8 +1,6 @@
 #include "buffer.h"
 #include <fstream>
 #include <algorithm>
-#include <codecvt>
-#include <locale>
 
 namespace subzero {
 
@@ -15,12 +13,18 @@ Buffer::Buffer()
     m_lines.push_back(""); // Always have at least one line
 }
 
-Buffer::Buffer(const std::string& filename) : Buffer() {
+Buffer::Buffer(const std::string& filename) 
+    : m_modified(false)
+    , m_readonly(false)
+    , m_cursor(0, 0)
+    , m_undo_index(0)
+{
+    m_lines.push_back(""); // Always have at least one line
     loadFromFile(filename);
 }
 
 bool Buffer::loadFromFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::binary);
+    std::ifstream file(filename.c_str(), std::ios::binary);
     if (!file.is_open()) {
         return false;
     }
@@ -35,8 +39,8 @@ bool Buffer::loadFromFile(const std::string& filename) {
     std::string line;
     while (std::getline(file, line)) {
         // Remove Windows line endings if present
-        if (!line.empty() && line.back() == '\r') {
-            line.pop_back();
+        if (!line.empty() && line[line.length() - 1] == '\r') {
+            line.erase(line.length() - 1);
         }
         m_lines.push_back(line);
     }
@@ -55,7 +59,7 @@ bool Buffer::saveToFile(const std::string& filename) {
         return false;
     }
     
-    std::ofstream file(target_file, std::ios::binary);
+    std::ofstream file(target_file.c_str(), std::ios::binary);
     if (!file.is_open()) {
         return false;
     }
@@ -120,9 +124,27 @@ bool Buffer::isValidPosition(const BufferPosition& pos) const {
 void Buffer::insertChar(char32_t unicode_char) {
     if (m_readonly) return;
     
-    // Convert Unicode to UTF-8
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
-    std::string utf8_char = converter.to_bytes(unicode_char);
+    // Simple UTF-8 encoding for basic characters
+    std::string utf8_char;
+    if (unicode_char < 0x80) {
+        // ASCII character
+        utf8_char = static_cast<char>(unicode_char);
+    } else if (unicode_char < 0x800) {
+        // 2-byte UTF-8
+        utf8_char += static_cast<char>(0xC0 | (unicode_char >> 6));
+        utf8_char += static_cast<char>(0x80 | (unicode_char & 0x3F));
+    } else if (unicode_char < 0x10000) {
+        // 3-byte UTF-8
+        utf8_char += static_cast<char>(0xE0 | (unicode_char >> 12));
+        utf8_char += static_cast<char>(0x80 | ((unicode_char >> 6) & 0x3F));
+        utf8_char += static_cast<char>(0x80 | (unicode_char & 0x3F));
+    } else {
+        // 4-byte UTF-8
+        utf8_char += static_cast<char>(0xF0 | (unicode_char >> 18));
+        utf8_char += static_cast<char>(0x80 | ((unicode_char >> 12) & 0x3F));
+        utf8_char += static_cast<char>(0x80 | ((unicode_char >> 6) & 0x3F));
+        utf8_char += static_cast<char>(0x80 | (unicode_char & 0x3F));
+    }
     
     insertString(utf8_char);
 }
@@ -256,18 +278,12 @@ BufferPosition Buffer::getNextWord() const {
         std::string ch = utf8::charAt(line, pos.column);
         if (ch.empty()) break;
         
-        char32_t unicode_char = 0;
-        std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
-        try {
-            std::u32string u32str = converter.from_bytes(ch);
-            if (!u32str.empty()) {
-                unicode_char = u32str[0];
-            }
-        } catch (...) {
-            break;
+        // Simple ASCII check for word characters
+        char32_t unicode_char = static_cast<unsigned char>(ch[0]);
+        if (ch.length() == 1) {
+            // ASCII character
+            if (!isWordChar(unicode_char)) break;
         }
-        
-        if (!isWordChar(unicode_char)) break;
         pos.column++;
     }
     

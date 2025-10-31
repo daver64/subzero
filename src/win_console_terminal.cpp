@@ -175,7 +175,7 @@ void WinConsoleTerminal::putChar(const std::string& utf8_char, const Position& p
     std::wstring wide_char = converter.from_bytes(utf8_char);
     
     DWORD written;
-    WriteConsoleW(m_stdout_handle, wide_char.c_str(), static_cast<DWORD>(wide_char.length()), &written, nullptr);
+    WriteConsoleW(m_stdout_handle, wide_char.c_str(), static_cast<DWORD>(wide_char.length()), &written, NULL);
 }
 
 void WinConsoleTerminal::putString(const std::string& utf8_str, const Position& pos) {
@@ -188,7 +188,7 @@ void WinConsoleTerminal::putString(const std::string& utf8_str, const Position& 
     std::wstring wide_str = converter.from_bytes(utf8_str);
     
     DWORD written;
-    WriteConsoleW(m_stdout_handle, wide_str.c_str(), static_cast<DWORD>(wide_str.length()), &written, nullptr);
+    WriteConsoleW(m_stdout_handle, wide_str.c_str(), static_cast<DWORD>(wide_str.length()), &written, NULL);
 }
 
 void WinConsoleTerminal::putStringWithColor(const std::string& utf8_str, const Position& pos, 
@@ -202,14 +202,14 @@ void WinConsoleTerminal::putStringWithColor(const std::string& utf8_str, const P
 }
 
 KeyPress WinConsoleTerminal::getKey() {
-    if (!m_initialized) return KeyPress(Key::UNKNOWN);
+    if (!m_initialized) return KeyPress(UNKNOWN);
     
     INPUT_RECORD input_record;
     DWORD events_read;
     
     while (true) {
         if (!ReadConsoleInputW(m_stdin_handle, &input_record, 1, &events_read)) {
-            return KeyPress(Key::UNKNOWN);
+            return KeyPress(UNKNOWN);
         }
         
         if (input_record.EventType == KEY_EVENT && input_record.Event.KeyEvent.bKeyDown) {
@@ -218,7 +218,7 @@ KeyPress WinConsoleTerminal::getKey() {
             // Handle special keys
             if (key_event.wVirtualKeyCode != 0) {
                 Key special_key = mapWindowsKey(key_event.wVirtualKeyCode, key_event.uChar.UnicodeChar);
-                if (special_key != Key::UNKNOWN) {
+                if (special_key != UNKNOWN) {
                     return KeyPress(special_key);
                 }
             }
@@ -281,29 +281,30 @@ std::string WinConsoleTerminal::getLastError() const {
     return m_last_error;
 }
 
+// Helper function to map single color values
+static WORD mapSingleColor(Color::Value color) {
+    switch (color) {
+        case Color::BLACK: return 0;
+        case Color::RED: return FOREGROUND_RED;
+        case Color::GREEN: return FOREGROUND_GREEN;
+        case Color::YELLOW: return FOREGROUND_RED | FOREGROUND_GREEN;
+        case Color::BLUE: return FOREGROUND_BLUE;
+        case Color::MAGENTA: return FOREGROUND_RED | FOREGROUND_BLUE;
+        case Color::CYAN: return FOREGROUND_GREEN | FOREGROUND_BLUE;
+        case Color::WHITE: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+        case Color::BRIGHT_BLACK: return FOREGROUND_INTENSITY;
+        case Color::BRIGHT_RED: return FOREGROUND_RED | FOREGROUND_INTENSITY;
+        case Color::BRIGHT_GREEN: return FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+        case Color::BRIGHT_YELLOW: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+        case Color::BRIGHT_BLUE: return FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+        case Color::BRIGHT_MAGENTA: return FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+        case Color::BRIGHT_CYAN: return FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+        case Color::BRIGHT_WHITE: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+        default: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+    }
+}
+
 WORD WinConsoleTerminal::mapColor(Color::Value fg, Color::Value bg) {
-    auto mapSingleColor = [](Color::Value color) -> WORD {
-        switch (color) {
-            case Color::BLACK: return 0;
-            case Color::RED: return FOREGROUND_RED;
-            case Color::GREEN: return FOREGROUND_GREEN;
-            case Color::YELLOW: return FOREGROUND_RED | FOREGROUND_GREEN;
-            case Color::BLUE: return FOREGROUND_BLUE;
-            case Color::MAGENTA: return FOREGROUND_RED | FOREGROUND_BLUE;
-            case Color::CYAN: return FOREGROUND_GREEN | FOREGROUND_BLUE;
-            case Color::WHITE: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-            case Color::BRIGHT_BLACK: return FOREGROUND_INTENSITY;
-            case Color::BRIGHT_RED: return FOREGROUND_RED | FOREGROUND_INTENSITY;
-            case Color::BRIGHT_GREEN: return FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-            case Color::BRIGHT_YELLOW: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-            case Color::BRIGHT_BLUE: return FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-            case Color::BRIGHT_MAGENTA: return FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-            case Color::BRIGHT_CYAN: return FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-            case Color::BRIGHT_WHITE: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-            default: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-        }
-    };
-    
     WORD fg_attr = mapSingleColor(fg);
     WORD bg_attr = mapSingleColor(bg) << 4; // Background colors are shifted
     
@@ -313,41 +314,41 @@ WORD WinConsoleTerminal::mapColor(Color::Value fg, Color::Value bg) {
 Key WinConsoleTerminal::mapWindowsKey(WORD vk_code, WCHAR unicode_char) {
     // Handle control characters
     if (unicode_char < 32) {
-        if (unicode_char == 27) return Key::ESCAPE;
-        if (unicode_char == 8) return Key::BACKSPACE;
-        if (unicode_char == 9) return Key::TAB;
-        if (unicode_char == 13) return Key::ENTER;
+        if (unicode_char == 27) return ESCAPE;
+        if (unicode_char == 8) return BACKSPACE;
+        if (unicode_char == 9) return TAB;
+        if (unicode_char == 13) return ENTER;
         
         // Ctrl+A through Ctrl+Z
         if (unicode_char >= 1 && unicode_char <= 26) {
-            return static_cast<Key>(static_cast<int>(Key::CTRL_A) + unicode_char - 1);
+            return static_cast<Key>(static_cast<int>(CTRL_A) + unicode_char - 1);
         }
     }
     
     // Handle special keys
     switch (vk_code) {
-        case VK_UP: return Key::ARROW_UP;
-        case VK_DOWN: return Key::ARROW_DOWN;
-        case VK_LEFT: return Key::ARROW_LEFT;
-        case VK_RIGHT: return Key::ARROW_RIGHT;
-        case VK_HOME: return Key::HOME;
-        case VK_END: return Key::END;
-        case VK_PRIOR: return Key::PAGE_UP;
-        case VK_NEXT: return Key::PAGE_DOWN;
-        case VK_DELETE: return Key::DELETE;
-        case VK_F1: return Key::F1;
-        case VK_F2: return Key::F2;
-        case VK_F3: return Key::F3;
-        case VK_F4: return Key::F4;
-        case VK_F5: return Key::F5;
-        case VK_F6: return Key::F6;
-        case VK_F7: return Key::F7;
-        case VK_F8: return Key::F8;
-        case VK_F9: return Key::F9;
-        case VK_F10: return Key::F10;
-        case VK_F11: return Key::F11;
-        case VK_F12: return Key::F12;
-        default: return Key::UNKNOWN;
+        case VK_UP: return ARROW_UP;
+        case VK_DOWN: return ARROW_DOWN;
+        case VK_LEFT: return ARROW_LEFT;
+        case VK_RIGHT: return ARROW_RIGHT;
+        case VK_HOME: return HOME;
+        case VK_END: return END;
+        case VK_PRIOR: return PAGE_UP;
+        case VK_NEXT: return PAGE_DOWN;
+        case VK_DELETE: return DELETE;
+        case VK_F1: return F1;
+        case VK_F2: return F2;
+        case VK_F3: return F3;
+        case VK_F4: return F4;
+        case VK_F5: return F5;
+        case VK_F6: return F6;
+        case VK_F7: return F7;
+        case VK_F8: return F8;
+        case VK_F9: return F9;
+        case VK_F10: return F10;
+        case VK_F11: return F11;
+        case VK_F12: return F12;
+        default: return UNKNOWN;
     }
 }
 

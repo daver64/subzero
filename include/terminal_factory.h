@@ -1,6 +1,6 @@
 #pragma once
 #include "terminal.h"
-#include <memory>
+#include "compat.h"
 
 namespace subzero {
 
@@ -13,7 +13,7 @@ public:
     static std::string getPlatformName();
     
 private:
-    TerminalFactory() = delete; // Static class
+    TerminalFactory(); // Static class - private constructor
 };
 
 } // namespace subzero

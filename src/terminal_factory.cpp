@@ -10,12 +10,12 @@ namespace subzero {
 
 std::unique_ptr<ITerminal> TerminalFactory::create() {
 #ifdef LINUX_PLATFORM
-    return std::make_unique<NcursesTerminal>();
+    return std::unique_ptr<ITerminal>(new NcursesTerminal());
 #elif defined(WINDOWS_PLATFORM)
-    return std::make_unique<WinConsoleTerminal>();
+    return std::unique_ptr<ITerminal>(new WinConsoleTerminal());
 #else
     #error "Unsupported platform - please define LINUX_PLATFORM or WINDOWS_PLATFORM"
-    return nullptr;
+    return std::unique_ptr<ITerminal>();
 #endif
 }
 

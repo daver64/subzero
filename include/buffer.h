@@ -1,4 +1,5 @@
 #pragma once
+#include "compat.h"
 #include "utf8_utils.h"
 #include <vector>
 #include <string>

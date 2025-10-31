@@ -3,13 +3,13 @@
 #include "window.h"
 #include "terminal.h"
 #include "syntax_highlighter_manager.h"
-#include <memory>
+#include "compat.h"
 #include <string>
 #include <functional>
 
 namespace subzero {
 
-enum class EditorMode {
+enum EditorMode {
     NORMAL,     // Normal vi mode - movement and commands
     INSERT,     // Insert mode - typing text
     VISUAL,     // Visual selection mode
@@ -18,21 +18,16 @@ enum class EditorMode {
     SEARCH      // Search mode (/, ?)
 };
 
-struct KeyBinding {
-    std::string keys;
-    std::function<void()> action;
-    EditorMode mode;
-    std::string description;
-};
+// Remove KeyBinding struct for C++98 compatibility
 
 class Editor {
 private:
-    std::shared_ptr<ITerminal> m_terminal;
-    std::shared_ptr<Buffer> m_buffer;  // Current active buffer
-    std::shared_ptr<Window> m_window;
+    shared_ptr<ITerminal> m_terminal;
+    shared_ptr<Buffer> m_buffer;  // Current active buffer
+    shared_ptr<Window> m_window;
     
     // Buffer management
-    std::vector<std::shared_ptr<Buffer>> m_buffers;
+    std::vector<shared_ptr<Buffer> > m_buffers;
     int m_current_buffer_index;
     
     EditorMode m_mode;
@@ -43,9 +38,6 @@ private:
     std::string m_search_pattern;
     std::string m_last_search;
     bool m_search_forward;
-    
-    // Key bindings
-    std::vector<KeyBinding> m_key_bindings;
     
     // Status and messages
     std::string m_status_message;
@@ -65,14 +57,14 @@ private:
     
     // Repeat and count
     int m_repeat_count;
-    std::unique_ptr<SyntaxHighlighterManager> m_syntax_manager;
+    SyntaxHighlighterManager* m_syntax_manager;
     
     // Last command for repeat
     std::string m_last_command;
     
 public:
-    Editor(std::shared_ptr<ITerminal> terminal);
-    ~Editor() = default;
+    Editor(shared_ptr<ITerminal> terminal);
+    ~Editor();  // Need to delete raw pointer
     
     // Main editor loop
     void run();
@@ -159,7 +151,7 @@ private:
     void initializeKeyBindings();
     void setupNormalModeBindings();
     void parseRepeatCount(const KeyPress& key);
-    void applyRepeatCount(std::function<void()> action);
+    // Remove applyRepeatCount for C++98 compatibility
     void clearMessages();
     TerminalSize getEditorArea() const;
     void refreshDisplay();

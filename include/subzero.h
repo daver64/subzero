@@ -3,8 +3,7 @@
 #include <string>
 #include <cstdio>
 #include <vector>
-#include <cstdint>
-#include <memory>
+#include "compat.h"  // C++98 compatibility layer
 
 // Terminal abstraction
 #include "terminal_types.h"

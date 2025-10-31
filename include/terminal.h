@@ -5,7 +5,7 @@ namespace subzero {
 
 class ITerminal {
 public:
-    virtual ~ITerminal() = default;
+    virtual ~ITerminal() {}
     
     // Initialization and cleanup
     virtual bool initialize() = 0;

@@ -16,19 +16,30 @@ std::string CppSyntaxHighlighter::getVersion() const {
 }
 
 std::vector<std::string> CppSyntaxHighlighter::getSupportedExtensions() const {
-    return {"c", "cpp", "cxx", "cc", "c++", "h", "hpp", "hxx", "hh", "h++"};
+    std::vector<std::string> extensions;
+    extensions.push_back("c");
+    extensions.push_back("cpp");
+    extensions.push_back("cxx");
+    extensions.push_back("cc");
+    extensions.push_back("c++");
+    extensions.push_back("h");
+    extensions.push_back("hpp");
+    extensions.push_back("hxx");
+    extensions.push_back("hh");
+    extensions.push_back("h++");
+    return extensions;
 }
 
 bool CppSyntaxHighlighter::canHighlight(const std::string& filename, const std::string& /*content_sample*/) const {
     // Check by extension
-    auto extensions = getSupportedExtensions();
+    std::vector<std::string> extensions = getSupportedExtensions();
     size_t dot_pos = filename.find_last_of('.');
     if (dot_pos != std::string::npos) {
         std::string ext = filename.substr(dot_pos + 1);
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         
-        for (const auto& supported_ext : extensions) {
-            if (ext == supported_ext) {
+        for (std::vector<std::string>::const_iterator it = extensions.begin(); it != extensions.end(); ++it) {
+            if (ext == *it) {
                 return true;
             }
         }
@@ -58,7 +69,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
         
         // Single line comments
         if (pos + 1 < line_len && line.substr(pos, 2) == "//") {
-            result.tokens.emplace_back(pos, line_len - pos, Color::GREEN);
+            SyntaxToken token(pos, line_len - pos, Color::GREEN);
+            result.tokens.push_back(token);
             break;
         }
         
@@ -73,7 +85,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
                 }
                 pos++;
             }
-            result.tokens.emplace_back(start, pos - start, Color::GREEN);
+            SyntaxToken token(start, pos - start, Color::GREEN);
+            result.tokens.push_back(token);
             continue;
         }
         
@@ -83,7 +96,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
             while (pos < line_len && !std::isspace(line[pos])) {
                 pos++;
             }
-            result.tokens.emplace_back(start, pos - start, Color::MAGENTA);
+            SyntaxToken token(start, pos - start, Color::MAGENTA);
+            result.tokens.push_back(token);
             continue;
         }
         
@@ -101,7 +115,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
                     pos++;
                 }
             }
-            result.tokens.emplace_back(start, pos - start, Color::YELLOW);
+            SyntaxToken token(start, pos - start, Color::YELLOW);
+            result.tokens.push_back(token);
             continue;
         }
         
@@ -117,7 +132,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
             if (pos < line_len && line[pos] == '\'') {
                 pos++; // Include closing quote
             }
-            result.tokens.emplace_back(start, pos - start, Color::YELLOW);
+            SyntaxToken token(start, pos - start, Color::YELLOW);
+            result.tokens.push_back(token);
             continue;
         }
         
@@ -131,7 +147,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
                                      line[pos] == 'U')) {
                 pos++;
             }
-            result.tokens.emplace_back(start, pos - start, Color::CYAN);
+            SyntaxToken token(start, pos - start, Color::CYAN);
+            result.tokens.push_back(token);
             continue;
         }
         
@@ -145,9 +162,11 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
             std::string word = line.substr(start, pos - start);
             
             if (m_keywords.count(word)) {
-                result.tokens.emplace_back(start, pos - start, Color::BLUE);
+                SyntaxToken token(start, pos - start, Color::BLUE);
+                result.tokens.push_back(token);
             } else if (m_types.count(word)) {
-                result.tokens.emplace_back(start, pos - start, Color::BRIGHT_CYAN);
+                SyntaxToken token(start, pos - start, Color::BRIGHT_CYAN);
+                result.tokens.push_back(token);
             }
             continue;
         }
@@ -165,7 +184,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
                     two_char == "*=" || two_char == "/=" || two_char == "%=" ||
                     two_char == "::" || two_char == "->") {
                     pos += 2;
-                    result.tokens.emplace_back(start, 2, Color::RED);
+                    SyntaxToken token(start, 2, Color::RED);
+                    result.tokens.push_back(token);
                     continue;
                 }
             }
@@ -175,7 +195,8 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
             if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' ||
                 c == '=' || c == '<' || c == '>' || c == '!' || c == '&' ||
                 c == '|' || c == '^' || c == '~' || c == '?' || c == ':') {
-                result.tokens.emplace_back(start, 1, Color::RED);
+                SyntaxToken token(start, 1, Color::RED);
+                result.tokens.push_back(token);
             }
             pos++;
             continue;
@@ -188,30 +209,77 @@ SyntaxHighlightResult CppSyntaxHighlighter::highlightLine(const std::string& lin
 }
 
 void CppSyntaxHighlighter::initializeKeywords() {
-    // C keywords
-    m_keywords = {
-        "auto", "break", "case", "char", "const", "continue", "default", "do",
-        "double", "else", "enum", "extern", "float", "for", "goto", "if",
-        "int", "long", "register", "return", "short", "signed", "sizeof", "static",
-        "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while"
-    };
+    // C++ keywords
+    m_keywords.insert("auto");
+    m_keywords.insert("break");
+    m_keywords.insert("case");
+    m_keywords.insert("char");
+    m_keywords.insert("const");
+    m_keywords.insert("continue");
+    m_keywords.insert("default");
+    m_keywords.insert("do");
+    m_keywords.insert("double");
+    m_keywords.insert("else");
+    m_keywords.insert("enum");
+    m_keywords.insert("extern");
+    m_keywords.insert("float");
+    m_keywords.insert("for");
+    m_keywords.insert("goto");
+    m_keywords.insert("if");
+    m_keywords.insert("int");
+    m_keywords.insert("long");
+    m_keywords.insert("register");
+    m_keywords.insert("return");
+    m_keywords.insert("short");
+    m_keywords.insert("signed");
+    m_keywords.insert("sizeof");
+    m_keywords.insert("static");
+    m_keywords.insert("struct");
+    m_keywords.insert("switch");
+    m_keywords.insert("typedef");
+    m_keywords.insert("union");
+    m_keywords.insert("unsigned");
+    m_keywords.insert("void");
+    m_keywords.insert("volatile");
+    m_keywords.insert("while");
     
-    // C++ additional keywords
-    m_keywords.insert({
-        "class", "namespace", "template", "typename", "public", "private", "protected",
-        "virtual", "override", "final", "explicit", "inline", "friend", "operator",
-        "new", "delete", "this", "try", "catch", "throw", "using", "constexpr",
-        "decltype", "nullptr", "static_assert", "thread_local", "alignas", "alignof",
-        "noexcept", "consteval", "constinit", "concept", "requires"
-    });
+    // C++ specific keywords
+    m_keywords.insert("class");
+    m_keywords.insert("private");
+    m_keywords.insert("protected");
+    m_keywords.insert("public");
+    m_keywords.insert("this");
+    m_keywords.insert("new");
+    m_keywords.insert("delete");
+    m_keywords.insert("template");
+    m_keywords.insert("typename");
+    m_keywords.insert("namespace");
+    m_keywords.insert("using");
+    m_keywords.insert("try");
+    m_keywords.insert("catch");
+    m_keywords.insert("throw");
+    m_keywords.insert("virtual");
+    m_keywords.insert("explicit");
+    m_keywords.insert("inline");
+    m_keywords.insert("friend");
+    m_keywords.insert("operator");
     
-    // Common types
-    m_types = {
-        "bool", "true", "false", "nullptr_t", "size_t", "ptrdiff_t", "wchar_t",
-        "char8_t", "char16_t", "char32_t", "int8_t", "int16_t", "int32_t", "int64_t",
-        "uint8_t", "uint16_t", "uint32_t", "uint64_t", "intptr_t", "uintptr_t",
-        "string", "vector", "map", "set", "list", "array", "unique_ptr", "shared_ptr"
-    };
+    // Built-in types
+    m_types.insert("bool");
+    m_types.insert("true");
+    m_types.insert("false");
+    m_types.insert("size_t");
+    m_types.insert("ptrdiff_t");
+    m_types.insert("wchar_t");
+    m_types.insert("string");
+    m_types.insert("vector");
+    m_types.insert("map");
+    m_types.insert("set");
+    m_types.insert("list");
+    m_types.insert("pair");
+    m_types.insert("iterator");
+    m_types.insert("const_iterator");
+    m_types.insert("FILE");
 }
 
 } // namespace subzero

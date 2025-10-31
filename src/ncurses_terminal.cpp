@@ -128,7 +128,7 @@ void NcursesTerminal::putStringWithColor(const std::string& utf8_str, const Posi
 }
 
 KeyPress NcursesTerminal::getKey() {
-    if (!m_initialized) return KeyPress(Key::UNKNOWN);
+    if (!m_initialized) return KeyPress(UNKNOWN);
     
     int ch = getch();
     
@@ -140,17 +140,17 @@ KeyPress NcursesTerminal::getKey() {
     
     // Handle control characters
     if (ch < 32) {
-        if (ch == 27) return KeyPress(Key::ESCAPE);
-        if (ch == 8 || ch == 127) return KeyPress(Key::BACKSPACE);
-        if (ch == 9) return KeyPress(Key::TAB);
-        if (ch == 10 || ch == 13) return KeyPress(Key::ENTER);
+        if (ch == 27) return KeyPress(ESCAPE);
+        if (ch == 8 || ch == 127) return KeyPress(BACKSPACE);
+        if (ch == 9) return KeyPress(TAB);
+        if (ch == 10 || ch == 13) return KeyPress(ENTER);
         
         // Ctrl+A through Ctrl+Z
         if (ch >= 1 && ch <= 26) {
-            return KeyPress(static_cast<Key>(static_cast<int>(Key::CTRL_A) + ch - 1));
+            return KeyPress(static_cast<Key>(static_cast<int>(CTRL_A) + ch - 1));
         }
         
-        return KeyPress(Key::UNKNOWN);
+        return KeyPress(UNKNOWN);
     }
     
     // Handle UTF-8 characters
@@ -259,29 +259,29 @@ int NcursesTerminal::mapColor(Color::Value color) {
 
 Key NcursesTerminal::mapNcursesKey(int ch) {
     switch (ch) {
-        case KEY_UP: return Key::ARROW_UP;
-        case KEY_DOWN: return Key::ARROW_DOWN;
-        case KEY_LEFT: return Key::ARROW_LEFT;
-        case KEY_RIGHT: return Key::ARROW_RIGHT;
-        case KEY_HOME: return Key::HOME;
-        case KEY_END: return Key::END;
-        case KEY_PPAGE: return Key::PAGE_UP;
-        case KEY_NPAGE: return Key::PAGE_DOWN;
-        case KEY_BACKSPACE: return Key::BACKSPACE;
-        case KEY_DC: return Key::DELETE;
-        case KEY_F(1): return Key::F1;
-        case KEY_F(2): return Key::F2;
-        case KEY_F(3): return Key::F3;
-        case KEY_F(4): return Key::F4;
-        case KEY_F(5): return Key::F5;
-        case KEY_F(6): return Key::F6;
-        case KEY_F(7): return Key::F7;
-        case KEY_F(8): return Key::F8;
-        case KEY_F(9): return Key::F9;
-        case KEY_F(10): return Key::F10;
-        case KEY_F(11): return Key::F11;
-        case KEY_F(12): return Key::F12;
-        default: return Key::UNKNOWN;
+        case KEY_UP: return ARROW_UP;
+        case KEY_DOWN: return ARROW_DOWN;
+        case KEY_LEFT: return ARROW_LEFT;
+        case KEY_RIGHT: return ARROW_RIGHT;
+        case KEY_HOME: return HOME;
+        case KEY_END: return END;
+        case KEY_PPAGE: return PAGE_UP;
+        case KEY_NPAGE: return PAGE_DOWN;
+        case KEY_BACKSPACE: return BACKSPACE;
+        case KEY_DC: return DELETE;
+        case KEY_F(1): return F1;
+        case KEY_F(2): return F2;
+        case KEY_F(3): return F3;
+        case KEY_F(4): return F4;
+        case KEY_F(5): return F5;
+        case KEY_F(6): return F6;
+        case KEY_F(7): return F7;
+        case KEY_F(8): return F8;
+        case KEY_F(9): return F9;
+        case KEY_F(10): return F10;
+        case KEY_F(11): return F11;
+        case KEY_F(12): return F12;
+        default: return UNKNOWN;
     }
 }
 
